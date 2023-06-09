@@ -117,7 +117,7 @@ class ProtChemGypsumDL(EMProtocol):
         args += self.getBoolArgs()
 
         dirPath = 'autogrow4/autogrow/operators/convert_files/gypsum_dl'
-        Plugin.runScript(self, 'run_gypsum_dl.py', args, env='AutoGrow4', cwd=outDir,
+        Plugin.runScript(self, 'run_gypsum_dl.py', args, env=AGROW_DIC, cwd=outDir,
                          scriptDir=Plugin.getProgramHome(AGROW_DIC, path=dirPath))
 
     def createOutputStep(self):
