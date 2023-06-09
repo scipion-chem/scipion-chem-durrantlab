@@ -98,7 +98,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
                             choices=['AutoGrow libraries', 'User small molecules'], display=EnumParam.DISPLAY_HLIST,
                             help='Source of the input molecules that will be variated and docked')
         inputGroup.addParam('inputAGrowMols', EnumParam, label='Input AutoGrow small molecules: ',
-                           condition='ligandsSource==0',
+                           condition='ligandsSource==0', default=0,
                            choices=['ZINC MW <= 100 Da', 'ZINC 100 Da < MW <= 150 Da', 'ZINC 150 Da < MW <= 200 Da',
                                     'ZINC 200 Da < MW <= 250 Da', 'Naphthalene', 'PARPi', 'PARPi_BRICS_frags'],
                            help="Source compounds from AutoGrow examples. For more info about the groups, check "
@@ -271,7 +271,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         args += self.getConversionArgs()
         args += self.getArgs()
 
-        Plugin.runScript(self, 'RunAutogrow.py', args, env='AutoGrow4',
+        Plugin.runScript(self, 'RunAutogrow.py', args, env=AGROW_DIC,
                                   cwd=self._getExtraPath(),
                                   scriptDir=Plugin.getProgramHome(AGROW_DIC, path='autogrow4'))
 
@@ -370,7 +370,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
 
     def compressResults(self, genDir):
       args = '--compress_or_decompress compress --input_folder_or_file {}'.format(os.path.abspath(genDir))
-      Plugin.runScript(self, 'accessory_scripts/file_concatenate_and_compression.py', args, env='AutoGrow4',
+      Plugin.runScript(self, 'accessory_scripts/file_concatenate_and_compression.py', args, env=AGROW_DIC,
                                 cwd=self._getExtraPath(),
                                 scriptDir=Plugin.getProgramHome(AGROW_DIC, path='autogrow4'))
 
