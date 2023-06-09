@@ -25,5 +25,6 @@
 # **************************************************************************
 
 
-
-
+MGL_DIC = {'name': 'mgltools',    'version': '1.5.6', 'home': 'MGL_HOME'}
+AGROW_DIC = {'name': 'AutoGrow', 'version': '4.0.3', 'home': 'AGROW_HOME'}
+DFRAG_DIC = {'name': 'DeepFrag',    'version': '1.0.3', 'home': 'DFRAG_HOME'}
