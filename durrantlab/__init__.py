@@ -72,7 +72,7 @@ class Plugin(pwchem.Plugin):
         agrowCommands = 'conda create -y -n {} -c rdkit rdkit=2020.09.1 && '.format(cls.getEnvName(AGROW_DIC))
         agrowCommands += '{} && '.format(cls.getEnvActivationCommand(AGROW_DIC))
         agrowCommands += 'conda install -y numpy=1.21.6 scipy=1.7.3 matplotlib=3.5.3 func_timeout=4.3.5 && '
-        agrowCommands += 'conda install -y -c openbabel openbabel=2.4.1 && '
+        agrowCommands += 'conda install -y -c openbabel openbabel && '
         agrowCommands += 'git clone {} && '.format(cls.getAutoGrowGithub())
         agrowCommands += 'touch {}'.format(AGROW_INSTALLED)
         agrowCommands = [(agrowCommands, AGROW_INSTALLED)]
