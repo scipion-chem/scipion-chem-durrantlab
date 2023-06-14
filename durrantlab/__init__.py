@@ -105,11 +105,11 @@ class Plugin(pwchem.Plugin):
 
     @classmethod
     def getAutoGrowGithub(cls):
-      return 'https://git.durrantlab.pitt.edu/jdurrant/autogrow4.git'
+      return 'https://github.com/durrantlab/autogrow4.git'
 
     @classmethod
     def getDeepFragGithub(cls):
-        return 'https://git.durrantlab.pitt.edu/jdurrant/deepfrag.git'
+        return 'https://github.com/durrantlab/deepfrag.git'
 
     @classmethod
     def getDeepFragFingerprints(cls):
