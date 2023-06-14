@@ -54,9 +54,9 @@ class Plugin(pwchem.Plugin):
     def addDeepFragPackage(cls, env, default=False):
         DFRAG_INSTALLED = 'deepFrag_installed'
         dFragCommands = 'git clone {} && cd deepfrag && '.format(cls.getDeepFragGithub())
-        dFragCommands += 'conda create -y -n {} prody=1.11 && '\
+        dFragCommands += 'conda create -y -n {} -c fastai prody=1.11 && '\
             .format(cls.getEnvName(DFRAG_DIC))
-        dFragCommands += '{} && conda config --env --add channels fastai pytorch && '.format(cls.getEnvActivationCommand(DFRAG_DIC))
+        dFragCommands += '{} && conda config --env --add channels pytorch && '.format(cls.getEnvActivationCommand(DFRAG_DIC))
         dFragCommands += 'conda install --file requirements.txt && pip install pyparsing==2.4.7 && '
         dFragCommands += "mkdir .store && wget {} -P .store && wget {} -O DFModel.zip && " \
                          "unzip DFModel.zip -d .store/model && ".\
