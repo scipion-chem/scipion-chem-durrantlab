@@ -54,9 +54,9 @@ class Plugin(pwchem.Plugin):
     def addDeepFragPackage(cls, env, default=False):
         DFRAG_INSTALLED = 'deepFrag_installed'
         dFragCommands = 'git clone {} && cd deepfrag && '.format(cls.getDeepFragGithub())
-        dFragCommands += 'conda create -y -n {} -c fastai --file requirements.txt prody=1.11 && '\
+        dFragCommands += 'conda create -y -n {} -c fastai -c conda-forge --file requirements.txt prody=1.11 rdkit && '\
             .format(cls.getEnvName(DFRAG_DIC))
-        dFragCommands += '{} && pip install pyparsing==2.4.7 && '.format(cls.getEnvActivationCommand(DFRAG_DIC))
+        dFragCommands += '{} && pip install pyparsing==2.4.7 torch && '.format(cls.getEnvActivationCommand(DFRAG_DIC))
         dFragCommands += "mkdir .store && wget {} -P .store && wget {} -O DFModel.zip && " \
                          "unzip DFModel.zip -d .store/model && ".\
             format(cls.getDeepFragFingerprints(), cls.getDeepFragModel())
