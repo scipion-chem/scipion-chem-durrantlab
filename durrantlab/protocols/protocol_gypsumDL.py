@@ -128,7 +128,7 @@ class ProtChemGypsumDL(EMProtocol):
       for outMol in os.listdir(outDir):
         if outMol.endswith('.pdb'):
           molName = outMol.split('_')[0]
-          if not molName in countDic :
+          if molName not in countDic :
             countDic[molName] = 1
           else:
             countDic[molName] += 1

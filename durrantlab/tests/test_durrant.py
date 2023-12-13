@@ -28,7 +28,7 @@ from pwem.protocols import ProtImportPdb, ProtSetFilter
 
 from pwchem.tests import TestExtractLigand, TestImportBase, TestDefineStructROIs
 
-from durrantlab.protocols import *
+from durrantlab.protocols import ProtChemGypsumDL, ProtChemAutoGrow4, ProtChemDeepFrag
 
 defROIsStr = '''1) Ligand: {"molName": "HEM"}'''
 

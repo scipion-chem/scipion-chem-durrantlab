@@ -37,7 +37,7 @@ from pwchem.wizards import GetRadiusProtein, SelectElementWizard, SelectLigandAt
 from pwchem.utils import getBaseName
 from pwchem.viewers import PyMolViewer
 
-from durrantlab.protocols import *
+from durrantlab.protocols import ProtChemDeepFrag, ProtChemAutoGrow4
 
 for prot in [ProtChemAutoGrow4]:
     GetRadiusProtein().addTarget(protocol=prot,
@@ -118,7 +118,7 @@ class ViewInputLigandWizard(VariableWizard):
       f.write(pmlStr)
 
   def show(self, form, *params):
-    inputParam, outputParam = self.getInputOutput(form)
+    inputParam, _ = self.getInputOutput(form)
     protocol = form.protocol
     project = protocol.getProject()
 
