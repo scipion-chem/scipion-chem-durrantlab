@@ -257,17 +257,17 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
 
         if self.fromReceptor.get() == 0:
           radius = self.radius.get()
-          structure, x_center, y_center, z_center = calculate_centerMass(self.getReceptorPDB())
+          _, xCenter, yCenter, zCenter = calculate_centerMass(self.getReceptorPDB())
           nCPUs = self.numberOfThreads.get()
         else:
           radius = (pocket.getDiameter() / 2) * self.pocketRadiusN.get()
-          x_center, y_center, z_center = pocket.calculateMassCenter()
+          xCenter, yCenter, zCenter = pocket.calculateMassCenter()
           nCPUs = self.numberOfThreads.get() // len(self.inputStructROIs.get())
 
         args = ' --filename_of_receptor {} --source_compound_file {} --root_output_folder {} -p {}'. \
           format(self.getReceptorPDB(), self.getInputSMIFile(), outDir, nCPUs)
         args += ' --center_x {} --center_y {} --center_z {} --size_x {} --size_y {} --size_z {} '.\
-          format(x_center, y_center, z_center, radius, radius, radius)
+          format(xCenter, yCenter, zCenter, radius, radius, radius)
         args += self.getConversionArgs()
         args += self.getArgs()
 
@@ -316,32 +316,33 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
     ################################################
 
     def getArgs(self):
-        args = ' --reduce_files_sizes False'
+        paramPrefix = '--'
+        args = f' {paramPrefix}reduce_files_sizes False'
         for key, protKey in argsDic.items():
           argVal = getattr(self, protKey).get()
           if argVal:
             argVal = int(float(argVal)) if key == 'gypsum_thoroughness' else argVal
-            args += ' --{} {}'.format(key, argVal)
+            args += ' {}{} {}'.format(paramPrefix, key, argVal)
 
         for key, protKey in argsBoolDic.items():
           if getattr(self, protKey).get():
-            args += ' --{}'.format(key)
+            args += ' {}{}'.format(paramPrefix, key)
 
         for key, protKey in argsBoolEnumDic.items():
           if getattr(self, protKey).get():
-            args += ' --{} True'.format(key)
+            args += ' {}{} True'.format(paramPrefix, key)
 
         for key, protKey in argsEnumDic.items():
           protVal = self.getEnumText(protKey)
-          args += ' --{} {}'.format(key, protVal)
+          args += ' {}{} {}'.format(paramPrefix, key, protVal)
 
         if self.fLipinski:
           lipKeys = ['LipinskiStrictFilter', 'LipinskiLenientFilter']
-          args += ' --{}'.format(lipKeys[self.LipinskiType.get()])
+          args += ' {}{}'.format(paramPrefix, lipKeys[self.LipinskiType.get()])
 
         if self.fGhose:
           lipKeys = ['GhoseFilter', 'GhoseModifiedFilter']
-          args += ' --{}'.format(lipKeys[self.GhoseType.get()])
+          args += ' {}{}'.format(paramPrefix, lipKeys[self.GhoseType.get()])
 
         return args
 
@@ -434,7 +435,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         return os.path.abspath(self._getExtraPath('{}.pdb'.format(self.getReceptorName())))
 
     def convertReceptor2PDB(self, proteinFile):
-        inName, inExt = os.path.splitext(os.path.basename(proteinFile))
+        _, inExt = os.path.splitext(os.path.basename(proteinFile))
         oFile = self.getReceptorPDB()
         if not os.path.exists(oFile):
           args = ' -i{} {} -opdb -O {}'.format(inExt[1:], os.path.abspath(proteinFile), oFile)

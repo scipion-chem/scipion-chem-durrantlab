@@ -54,9 +54,9 @@ class Plugin(pwchem.Plugin):
     def addDeepFragPackage(cls, env, default=False):
         DFRAG_INSTALLED = 'deepFrag_installed'
         dFragCommands = 'git clone {} && cd deepfrag && '.format(cls.getDeepFragGithub())
-        dFragCommands += 'conda create -y -n {} -c fastai --file requirements.txt prody=1.11 && '\
+        dFragCommands += 'conda create -y -n {} -c fastai -c conda-forge --file requirements.txt prody=1.11 rdkit && '\
             .format(cls.getEnvName(DFRAG_DIC))
-        dFragCommands += '{} && pip install pyparsing==2.4.7 && '.format(cls.getEnvActivationCommand(DFRAG_DIC))
+        dFragCommands += '{} && pip install pyparsing==2.4.7 torch && '.format(cls.getEnvActivationCommand(DFRAG_DIC))
         dFragCommands += "mkdir .store && wget {} -P .store && wget {} -O DFModel.zip && " \
                          "unzip DFModel.zip -d .store/model && ".\
             format(cls.getDeepFragFingerprints(), cls.getDeepFragModel())
@@ -69,10 +69,10 @@ class Plugin(pwchem.Plugin):
     @classmethod
     def addAutoGrowPackage(cls, env, default=False):
         AGROW_INSTALLED = 'autogrow_installed'
-        agrowCommands = 'conda create -y -n {} -c rdkit rdkit=2020.09.1 && '.format(cls.getEnvName(AGROW_DIC))
+        agrowCommands = 'conda create -y -n {} -c rdkit rdkit=2020.09 && '.format(cls.getEnvName(AGROW_DIC))
         agrowCommands += '{} && '.format(cls.getEnvActivationCommand(AGROW_DIC))
-        agrowCommands += 'conda install -y numpy=1.21.6 scipy=1.7.3 matplotlib=3.5.3 func_timeout=4.3.5 && '
-        agrowCommands += 'conda install -y -c openbabel openbabel=2.4.1 && '
+        agrowCommands += 'conda install -y numpy=1.21 scipy=1.7 matplotlib=3.5 func_timeout=4.3 && '
+        agrowCommands += 'conda install -y -c openbabel openbabel=2.4 && '
         agrowCommands += 'git clone {} && '.format(cls.getAutoGrowGithub())
         agrowCommands += 'touch {}'.format(AGROW_INSTALLED)
         agrowCommands = [(agrowCommands, AGROW_INSTALLED)]
@@ -105,11 +105,13 @@ class Plugin(pwchem.Plugin):
 
     @classmethod
     def getAutoGrowGithub(cls):
-      return 'https://git.durrantlab.pitt.edu/jdurrant/autogrow4.git'
+      return 'https://github.com/durrantlab/autogrow4.git'
 
     @classmethod
     def getDeepFragGithub(cls):
-        return 'https://git.durrantlab.pitt.edu/jdurrant/deepfrag.git'
+        #TODO: Change link to https://github.com/durrantlab/deepfrag.git
+        # when PR was been accepted: https://github.com/durrantlab/deepfrag/pull/3
+        return 'https://github.com/MartinSalinas98/deepfrag.git'
 
     @classmethod
     def getDeepFragFingerprints(cls):
