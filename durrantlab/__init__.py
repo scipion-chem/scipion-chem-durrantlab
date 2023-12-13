@@ -109,7 +109,9 @@ class Plugin(pwchem.Plugin):
 
     @classmethod
     def getDeepFragGithub(cls):
-        return 'https://github.com/durrantlab/deepfrag.git'
+        #TODO: Change link to https://github.com/durrantlab/deepfrag.git
+        # when PR was been accepted: https://github.com/durrantlab/deepfrag/pull/3
+        return 'https://github.com/MartinSalinas98/deepfrag.git'
 
     @classmethod
     def getDeepFragFingerprints(cls):
