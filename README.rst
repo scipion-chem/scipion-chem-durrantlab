@@ -9,7 +9,7 @@ This is a **Scipion** plugin that offers different tools from the
 These tools will make it possible to carry out different functions for predicting protein pockets.
 
 You can find further information on the
-`plugin documentation <https://github.com/scipion-chem/docs/blob/master/plugins/chem-durrantlab.rst>`_.
+`plugin documentation <https://scipion-chem.github.io/docs/plugins/durrantlab/index.html>`_.
 
 
 ==========================
