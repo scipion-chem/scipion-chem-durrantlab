@@ -69,7 +69,7 @@ class Plugin(pwchem.Plugin):
     @classmethod
     def addAutoGrowPackage(cls, env, default=False):
         AGROW_INSTALLED = 'autogrow_installed'
-        agrowCommands = 'conda create -y -n {} -c rdkit rdkit=2020.09 && '.format(cls.getEnvName(AGROW_DIC))
+        agrowCommands = 'conda create -y -n {} -c rdkit rdkit=2020.09 python=3.7 && '.format(cls.getEnvName(AGROW_DIC))
         agrowCommands += '{} && '.format(cls.getEnvActivationCommand(AGROW_DIC))
         agrowCommands += 'conda install -y numpy=1.21 scipy=1.7 matplotlib=3.5 func_timeout=4.3 && '
         agrowCommands += 'conda install -y -c openbabel openbabel=2.4 && '
