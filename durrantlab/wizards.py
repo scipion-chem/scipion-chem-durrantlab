@@ -123,7 +123,7 @@ class ViewInputLigandWizard(VariableWizard):
     project = protocol.getProject()
 
     inSet, molName = getattr(protocol, inputParam[0]).get(), getattr(protocol, inputParam[1]).get()
-    mol, targetFile = self.getMol(inSet, molName), inSet.getProteinFile()
+    mol, targetFile = self.getMol(inSet, molName), os.path.abspath(inSet.getProteinFile())
     molFile = mol.getPoseFile() if mol.getPoseFile() else mol.getFileName()
     molName = getBaseName(molFile)
 
