@@ -98,14 +98,14 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
                             choices=['AutoGrow libraries', 'User small molecules'], display=EnumParam.DISPLAY_HLIST,
                             help='Source of the input molecules that will be variated and docked')
         inputGroup.addParam('inputAGrowMols', EnumParam, label='Input AutoGrow small molecules: ',
-                           condition='ligandsSource==0', default=0,
-                           choices=['ZINC MW <= 100 Da', 'ZINC 100 Da < MW <= 150 Da', 'ZINC 150 Da < MW <= 200 Da',
-                                    'ZINC 200 Da < MW <= 250 Da', 'Naphthalene', 'PARPi', 'PARPi_BRICS_frags'],
-                           help="Source compounds from AutoGrow examples. For more info about the groups, check "
-                                "Example_source_compound_notes.txt file in autogrow4/source_compounds folder")
+                            condition='ligandsSource==0', default=0,
+                            choices=['ZINC MW <= 100 Da', 'ZINC 100 Da < MW <= 150 Da', 'ZINC 150 Da < MW <= 200 Da',
+                                     'ZINC 200 Da < MW <= 250 Da', 'Naphthalene', 'PARPi', 'PARPi_BRICS_frags'],
+                            help="Source compounds from AutoGrow examples. For more info about the groups, check "
+                                 "Example_source_compound_notes.txt file in autogrow4/source_compounds folder")
         inputGroup.addParam('inputSmallMolecules', PointerParam, pointerClass="SetOfSmallMolecules",
-                       label='Input small molecules: ', condition='ligandsSource==1',
-                       help="Input small molecules to be docked with AutoGrow")
+                            label='Input small molecules: ', condition='ligandsSource==1', allowsNull=True,
+                            help="Input small molecules to be docked with AutoGrow")
 
         lpGroup = form.addGroup('Ligand preparation')
         lpGroup.addParam('maxVars', IntParam, label='Maximum number of variants per compound: ', default=3,
@@ -142,7 +142,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
                         default='', expertLevel=LEVEL_ADVANCED,
                         help='Exhaustiveness of the global search (roughly proportional to time). If empty, default for'
                              ' each software will be used')
-        dGroup.addParam('nDocks', StringParam, label='Number of docking modes: ', default='',
+        dGroup.addParam('nDocks', IntParam, label='Number of docking modes: ', default=5,
                         help='Maximum number of binding modes to generate in docking. If empty, default for'
                              ' each software will be used')
         dGroup.addParam('scoreChoice', EnumParam, label='Scoring choice: ', default=0,
