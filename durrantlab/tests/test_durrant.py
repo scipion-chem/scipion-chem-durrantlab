@@ -106,7 +106,7 @@ class TestDeepFrag(TestExtractLigand):
 
     def test(self):
         protExtract = self._runExtractLigand(self.protImportPDB)
-        self._waitOutput(protExtract, 'outputSmallMolecules', sleepTime=5)
+        self._waitOutput(protExtract, 'outputSmallMolecules')
 
         protDeepFrag = self._runDeepFrag(inProt=protExtract)
         self.assertIsNotNone(protDeepFrag.outputSmallMolecules,
