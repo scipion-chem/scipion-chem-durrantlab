@@ -65,10 +65,10 @@ class TestAutoGrow(TestDefineStructROIs):
     def _runFilterSites(self, inProt):
         protFilter = self.newProtocol(
             ProtSetFilter,
+            inputSet=inProt,
             operation=ProtSetFilter.CHOICE_RANKED,
             threshold=1,
             rankingField='_score')
-        protFilter.inputSet.set(inProt)
         protFilter.inputSet.setExtended('outputStructROIs')
 
         self.launchProtocol(protFilter)
