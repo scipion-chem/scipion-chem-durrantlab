@@ -76,7 +76,7 @@ class TestAutoGrow(TestDefineStructROIs):
 
     def test(self):
         pDef = self._runDefStructROIs(defROIsStr)
-        self._waitOutput(pDef, 'outputStructROIs', sleepTime=10)
+        self._waitOutput(pDef, 'outputStructROIs')
         pROI = self._runFilterSites(pDef)
 
         pAGrow = self._runAutoGrow(pROI)
