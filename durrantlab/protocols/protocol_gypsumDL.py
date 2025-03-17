@@ -33,7 +33,7 @@ import pyworkflow.object as pwobj
 from pyworkflow.utils.path import makePath
 
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
-from pwchem.utils import runOpenBabel, calculate_centerMass, getBaseFileName
+from pwchem.utils import runOpenBabel, calculate_centerMass
 
 from durrantlab import Plugin
 from durrantlab import AGROW_DIC

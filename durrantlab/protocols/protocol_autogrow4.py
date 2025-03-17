@@ -33,7 +33,7 @@ import pyworkflow.object as pwobj
 from pyworkflow.utils.path import makePath
 
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
-from pwchem.utils import runOpenBabel, calculate_centerMass, getBaseFileName
+from pwchem.utils import runOpenBabel, calculate_centerMass, getBaseName
 
 from durrantlab import Plugin
 from durrantlab import AGROW_DIC
@@ -422,7 +422,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
 
     def getReceptorName(self):
         fnReceptor = self.getOriginalReceptorFile()
-        return getBaseFileName(fnReceptor)
+        return getBaseName(fnReceptor)
 
     def getReceptorDir(self):
         fnReceptor = self.getOriginalReceptorFile()
