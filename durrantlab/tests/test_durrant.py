@@ -65,10 +65,10 @@ class TestAutoGrow(TestDefineStructROIs):
     def _runFilterSites(self, inProt):
         protFilter = self.newProtocol(
             ProtSetFilter,
+            inputSet=inProt,
             operation=ProtSetFilter.CHOICE_RANKED,
             threshold=1,
             rankingField='_score')
-        protFilter.inputSet.set(inProt)
         protFilter.inputSet.setExtended('outputStructROIs')
 
         self.launchProtocol(protFilter)
@@ -76,7 +76,7 @@ class TestAutoGrow(TestDefineStructROIs):
 
     def test(self):
         pDef = self._runDefStructROIs(defROIsStr)
-        self._waitOutput(pDef, 'outputStructROIs', sleepTime=10)
+        self._waitOutput(pDef, 'outputStructROIs')
         pROI = self._runFilterSites(pDef)
 
         pAGrow = self._runAutoGrow(pROI)
@@ -106,7 +106,7 @@ class TestDeepFrag(TestExtractLigand):
 
     def test(self):
         protExtract = self._runExtractLigand(self.protImportPDB)
-        self._waitOutput(protExtract, 'outputSmallMolecules', sleepTime=5)
+        self._waitOutput(protExtract, 'outputSmallMolecules')
 
         protDeepFrag = self._runDeepFrag(inProt=protExtract)
         self.assertIsNotNone(protDeepFrag.outputSmallMolecules,
