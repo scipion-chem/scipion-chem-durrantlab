@@ -94,7 +94,7 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
       dockSteps = []
       for it, ligandStr in enumerate(self.ligandList.get().split('\n')):
           if ligandStr.strip():
-              dockId = self._insertFunctionStep('dFragStep', ligandStr, it=it, prerequisites=[cId])
+              dockId = self._insertFunctionStep('dFragStep', ligandStr, prerequisites=[cId])
               dockSteps.append(dockId)
 
       self._insertFunctionStep('createOutputStep', prerequisites=dockSteps)

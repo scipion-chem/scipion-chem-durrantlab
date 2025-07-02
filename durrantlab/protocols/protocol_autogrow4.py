@@ -235,7 +235,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         dockSteps.append(dockId)
       else:
         for it, pocket in enumerate(self.inputStructROIs.get()):
-          dockId = self._insertFunctionStep('dockStep', pocket.clone(), it=it, prerequisites=[cId])
+          dockId = self._insertFunctionStep('dockStep', pocket.clone(), prerequisites=[cId])
           dockSteps.append(dockId)
 
       self._insertFunctionStep('createOutputStep', prerequisites=dockSteps)

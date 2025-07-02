@@ -30,7 +30,7 @@ from pwchem.tests import TestExtractLigand, TestImportBase, TestDefineStructROIs
 
 from durrantlab.protocols import ProtChemGypsumDL, ProtChemAutoGrow4, ProtChemDeepFrag
 
-defROIsStr = '''1) Ligand: {"molName": "HEM"}'''
+defROIsStr = '''1) Ligand: {"molName": "HEM", "remove": "True"}'''
 
 class TestGypSumDL(TestImportBase):
     @classmethod
