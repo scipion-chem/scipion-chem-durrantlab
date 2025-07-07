@@ -64,7 +64,56 @@ zincDic = {'ZINC MW <= 100 Da': 'Fragment_MW_up_to_100.smi',
                'PARPi_BRICS_frags': 'PARPi_BRICS_frags.smi'}
 
 class ProtChemAutoGrow4(ProtChemGypsumDL):
-    """AutoGrow for docking and lead optimization"""
+    """AutoGrow for docking and lead optimization
+    
+    User IA Manual: AutoGrow4 Protocol
+
+The AutoGrow4 protocol provides an interface within Scipion-Chem for running
+the AutoGrow4 evolutionary algorithm. This tool is designed to iteratively
+optimize ligands by combining fragment-based growth strategies with genetic
+operations such as crossover and mutation, guided by docking scores as fitness
+functions.
+
+To use the protocol, the user must first provide an initial set of ligands,
+typically in SDF format, which will serve as the starting population for the
+evolutionary process. These ligands must be chemically valid and compatible
+with the selected docking backend. The user must also supply a target receptor
+in PDBQT format, prepared in advance to define the binding site against which
+ligand evolution will be guided.
+
+Key parameters include the number of generations to run, the size of each
+population, and the number of ligands to retain or carry over between
+generations. The user can control how fragments are introduced into the system,
+either by providing a fragment library or by selecting a preset source. The
+fragmentation and combination strategy may include specific rules to ensure
+synthetic accessibility or to preserve pharmacophoric features.
+
+Docking is integrated into each generation as a scoring step, and the user must
+specify the docking engine to be used. Supported engines include AutoDock Vina
+and others configured externally. Each ligand generated during evolution is
+docked to the receptor, and its score is used to determine whether it is
+retained, mutated, or replaced. The protocol allows tuning of docking
+parameters such as exhaustiveness and number of poses, which directly impact the
+fitness evaluation.
+
+Advanced options allow the user to enable diversity filters, convergence checks,
+and early stopping criteria. These help guide the evolutionary process toward
+chemical novelty while avoiding redundancy or premature convergence. Output
+settings can be adjusted to define how many top ligands to retain at the end,
+whether intermediate generations are saved, and in which format the final
+library is exported.
+
+Upon completion, the protocol produces a set of evolved ligands optimized for
+binding to the specified receptor. These ligands can be further analyzed,
+clustered, or rescored using other Scipion-Chem protocols. A full history of the
+evolutionary steps, including scores and transformations, is recorded to
+facilitate reproducibility and inspection.
+
+In summary, the AutoGrow4 protocol brings generative molecular design into the
+Scipion-Chem environment by combining chemical fragment assembly with
+docking-driven evolutionary selection. It enables the exploration of novel
+ligand chemotypes tailored to a specific target structure.
+    """
     _label = 'AutoGrow4 docking and lead optimization'
 
     def __init__(self, **kwargs):
