@@ -44,7 +44,52 @@ argsSkipDic = {'skip_optimize_geometry': 'optGeo', 'skip_alternate_ring_conforma
 argsBoolDic = {'let_tautomers_change_chirality': 'chirChang', 'use_durrant_lab_filters': 'durrFilter'}
 
 class ProtChemGypsumDL(EMProtocol):
-    """Protocol to execute Gypsum-DL for ligand preparation"""
+    """Protocol to execute Gypsum-DL for ligand preparation
+    
+    User IA Manual: GypsumDL Protocol
+
+The GypsumDL protocol prepares ligand molecules by generating 3D
+conformations, resolving stereochemistry, and enumerating possible tautomers
+and protonation states. This process is essential for ensuring that ligands are
+represented in biologically realistic forms before docking or simulation. The
+protocol serves as a wrapper around the Gypsum-DL engine, allowing its
+functionality to be used within Scipion-Chem workflows.
+
+To begin, the user must provide an input file containing one or more ligands.
+Supported formats include SMILES, SDF, or other standard chemical representations.
+These structures may be undefined in three dimensions, lack stereocenters, or
+be ambiguous with respect to ionization states. The protocol processes each
+ligand and applies rules to generate plausible 3D variants that account for
+these uncertainties.
+
+The user can configure how many stereoisomers, tautomers, or protonation states
+should be generated per compound. There is control over whether all possible
+variants are included or whether a representative subset is returned, which is
+useful to limit the total number of generated structures in large libraries.
+Additionally, the protocol allows specification of a pH range for ionization
+state prediction, influencing the placement of protons and the selection of
+dominant forms.
+
+As part of the 3D structure generation, the protocol uses force-field-based
+minimization to refine the geometry of each output molecule. The user may
+specify whether to include all hydrogen atoms explicitly and whether to retain
+metadata such as original compound names or database identifiers during output.
+Advanced options allow filtering of conformers by RMSD thresholds or
+physicochemical properties, depending on the modeling goals.
+
+Once the protocol has completed, the output consists of one or more files
+containing the generated 3D ligand structures. Each original molecule may be
+represented by multiple variants, each of which is suitable for docking,
+screening, or further preparation using other Scipion-Chem protocols. A summary
+table is also produced, mapping input ligands to their generated variants, along
+with logs describing any failures or warnings encountered during processing.
+
+In summary, this protocol transforms raw or ambiguous ligand descriptions into
+chemically complete, structurally optimized, and biologically relevant 3D forms.
+It provides a crucial step in the ligand preparation pipeline, especially when
+working with virtual screening libraries derived from diverse chemical sources.
+
+    """
     _label = 'Gypsum ligand preparation'
 
     def __init__(self, **kwargs):
