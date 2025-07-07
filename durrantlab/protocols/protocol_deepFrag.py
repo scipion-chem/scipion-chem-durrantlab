@@ -44,7 +44,52 @@ from durrantlab.protocols import ProtChemAutoGrow4
 NONE, GYPSUM, OBABEL, RDKIT = 0, 1, 2, 3
 
 class ProtChemDeepFrag(ProtChemAutoGrow4):
-    """DeepFrag lead optimization"""
+    """DeepFrag lead optimization
+    
+    User IA Manual: DeepFrag Protocol
+
+The DeepFrag protocol integrates the DeepFrag neural network into the
+Scipion-Chem environment, enabling fragment-based ligand optimization driven by
+learned structure?activity relationships. DeepFrag is designed to suggest small
+chemical modifications to a ligand fragment bound in a protein pocket, using a
+grid-based representation of the binding site as input to a trained deep
+learning model.
+
+To initiate the protocol, the user must provide a protein?ligand complex in
+PDBQT format. This structure should reflect a plausible binding mode, where the
+ligand is already positioned within the target receptor. DeepFrag operates by
+identifying a modifiable atom within the ligand and proposing new substituents
+that may improve binding affinity or introduce structural diversity. Therefore,
+one key input is the specification of the ligand atom to be replaced. This atom
+must be part of the ligand and should be adjacent to at least one hydrogen to
+allow replacement by a valid substituent.
+
+The user defines the grid box parameters that enclose the local environment
+around the modification site. This box must be large enough to capture the
+chemical context influencing fragment prioritization, including nearby residues
+and ligand features. The protocol supports manual definition of the box center
+and size, as well as options to derive these values automatically based on the
+ligand atom to be replaced.
+
+The model used by DeepFrag is fixed and trained to generate SMILES
+representations of suggested fragments. The user can set how many suggestions to
+generate per modification site and whether to filter out chemically invalid
+fragments based on valence rules or sanitization criteria. Once candidate
+fragments are generated, they are attached to the ligand core and saved as new
+molecules in standard chemical formats such as SDF or PDBQT.
+
+Output includes the optimized ligand structures with newly attached fragments,
+along with a table containing the suggested SMILES strings and associated model
+scores. These modified ligands can be directly docked or rescored using other
+protocols within Scipion-Chem. In addition, the user can inspect the location
+and identity of the modified atoms to assess the structural impact of the
+suggestions.
+
+Overall, this protocol enables structure-aware fragment elaboration guided by
+deep learning. It supports workflows where an initial ligand is iteratively
+refined by generating and evaluating novel chemical variants at specific
+positions within the binding site.
+    """
     _label = 'DeepFrag lead optimization'
 
     def __init__(self, **kwargs):
