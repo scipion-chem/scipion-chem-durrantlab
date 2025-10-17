@@ -34,7 +34,7 @@ import os
 
 from pwchem.wizards import GetRadiusProtein, SelectElementWizard, SelectLigandAtom, \
   AddElementWizard, VariableWizard
-from pwchem.utils import getBaseName
+from pwchem.utils import getBaseName, runOpenBabel, relabelAtomsPDB
 from pwchem.viewers import PyMolViewer
 
 from durrantlab.protocols import ProtChemDeepFrag, ProtChemAutoGrow4
@@ -117,6 +117,19 @@ class ViewInputLigandWizard(VariableWizard):
     with open(pmlFile, 'w') as f:
       f.write(pmlStr)
 
+  def getMolPDBFile(self, molFile):
+      if not molFile.endswith('.pdb'):
+          oDir = os.path.dirname(molFile)
+
+          inName, inExt = os.path.splitext(os.path.basename(molFile))
+          oFile = os.path.abspath(os.path.join(oDir, inName + '.pdb'))
+
+          args = ' -i{} {} -opdb -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
+          runOpenBabel(None, args=args, cwd=oDir, popen=True)
+          molFile = oFile
+      molFile = relabelAtomsPDB(molFile)
+      return molFile
+
   def show(self, form, *params):
     inputParam, _ = self.getInputOutput(form)
     protocol = form.protocol
@@ -129,6 +142,7 @@ class ViewInputLigandWizard(VariableWizard):
 
     pmlsDir = project.getTmpPath()
     pmlFile = os.path.join(pmlsDir, '{}.pml'.format(molName))
+    molFile = self.getMolPDBFile(molFile)
     self.writePmlFile(pmlFile, molFile, molName, targetFile)
 
     pymolV = PyMolViewer(project=project)
