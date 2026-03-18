@@ -65,54 +65,102 @@ zincDic = {'ZINC MW <= 100 Da': 'Fragment_MW_up_to_100.smi',
 
 class ProtChemAutoGrow4(ProtChemGypsumDL):
     """AutoGrow for docking and lead optimization
-    
-    User IA Manual: AutoGrow4 Protocol
 
-The AutoGrow4 protocol provides an interface within Scipion-Chem for running
-the AutoGrow4 evolutionary algorithm. This tool is designed to iteratively
-optimize ligands by combining fragment-based growth strategies with genetic
-operations such as crossover and mutation, guided by docking scores as fitness
-functions.
+    AI Generated:
 
-To use the protocol, the user must first provide an initial set of ligands,
-typically in SDF format, which will serve as the starting population for the
-evolutionary process. These ligands must be chemically valid and compatible
-with the selected docking backend. The user must also supply a target receptor
-in PDBQT format, prepared in advance to define the binding site against which
-ligand evolution will be guided.
+        ProtChemAutoGrow4 - User Manual
 
-Key parameters include the number of generations to run, the size of each
-population, and the number of ligands to retain or carry over between
-generations. The user can control how fragments are introduced into the system,
-either by providing a fragment library or by selecting a preset source. The
-fragmentation and combination strategy may include specific rules to ensure
-synthetic accessibility or to preserve pharmacophoric features.
+        Overview
+        --------
+        The ProtChemAutoGrow4 protocol integrates the AutoGrow4 evolutionary algorithm
+        into Scipion-Chem for docking and lead optimization. It iteratively optimizes
+        ligands using fragment-based growth combined with genetic algorithm operations
+        (crossover, mutation) guided by docking scores as fitness functions.
 
-Docking is integrated into each generation as a scoring step, and the user must
-specify the docking engine to be used. Supported engines include AutoDock Vina
-and others configured externally. Each ligand generated during evolution is
-docked to the receptor, and its score is used to determine whether it is
-retained, mutated, or replaced. The protocol allows tuning of docking
-parameters such as exhaustiveness and number of poses, which directly impact the
-fitness evaluation.
+        This protocol is designed to generate novel, high-affinity ligands for a
+        specific protein target while considering chemical diversity and synthetic feasibility.
 
-Advanced options allow the user to enable diversity filters, convergence checks,
-and early stopping criteria. These help guide the evolutionary process toward
-chemical novelty while avoiding redundancy or premature convergence. Output
-settings can be adjusted to define how many top ligands to retain at the end,
-whether intermediate generations are saved, and in which format the final
-library is exported.
+        Input Requirements
+        ------------------
+        1. **Receptor**:
+           - Atomic structure (`AtomStruct`) for docking the whole protein, or
+           - A set of structural regions of interest (`SetOfStructROIs`) for pocket-based docking.
+           - Supported file formats: PDB, PDBQT.
 
-Upon completion, the protocol produces a set of evolved ligands optimized for
-binding to the specified receptor. These ligands can be further analyzed,
-clustered, or rescored using other Scipion-Chem protocols. A full history of the
-evolutionary steps, including scores and transformations, is recorded to
-facilitate reproducibility and inspection.
+        2. **Ligands**:
+           - Source can be AutoGrow example libraries or user-provided small molecules (`SetOfSmallMolecules`).
+           - Initial molecules should be chemically valid and compatible with the docking backend.
 
-In summary, the AutoGrow4 protocol brings generative molecular design into the
-Scipion-Chem environment by combining chemical fragment assembly with
-docking-driven evolutionary selection. It enables the exploration of novel
-ligand chemotypes tailored to a specific target structure.
+        3. **Optional Fragment Libraries**:
+           - Preset AutoGrow libraries (ZINC fragments, PARPi fragments, etc.) for genetic operations.
+
+        Workflow
+        --------
+        1. **Ligand Preparation**:
+           - Conversion to SMILES.
+           - Conformer generation using Gypsum-DL.
+           - pH adjustment and protonation as specified.
+
+        2. **Genetic Algorithm Setup**:
+           - Number of generations (`nGens`), population size, and elitism parameters.
+           - Mutation and crossover operations guided by reaction libraries.
+           - Selectors for fitness evaluation (Roulette, Rank, Tournament).
+
+        3. **Docking Integration**:
+           - Docking software: AutoDock Vina or QuickVina2.
+           - Docking grid defined by whole protein or structural ROI.
+           - Docking parameters: exhaustiveness, number of modes, scoring function (Vina, NN1, NN2).
+
+        4. **Molecular Filters**:
+           - Optional drug-likeness filters: Lipinski, Ghose, Mozziconacci, PAINS, NIH, BRENK.
+           - Energy threshold for accepting docking poses.
+
+        5. **Iterative Evolution**:
+           - Ligand variants generated, docked, and scored.
+           - Top ligands seeded into subsequent generations.
+           - Diversity and convergence checks applied as specified.
+
+        Outputs
+        -------
+        - **Output Small Molecule Set**:
+          - Includes all docked ligands meeting energy thresholds.
+          - Each ligand annotated with:
+            - Docking energy.
+            - Pose ID.
+            - Grid ID.
+            - Docking and genetic algorithm metadata.
+
+        - **Optional Source Relation**:
+          - Tracks which original input molecule gave rise to each evolved ligand.
+
+        Advanced Options
+        ----------------
+        - Grid radius adjustment for whole protein or pockets.
+        - Control over number of variants, conformers, and pH precision.
+        - Selector type for GA (Roulette, Rank, Tournament) with tournament size control.
+        - Docking exhaustiveness and number of poses.
+        - Filters to enforce drug-likeness or reduce undesirable chemotypes.
+        - Support for multiple regions of interest with parallel execution.
+
+        Validation & Warnings
+        ---------------------
+        - Using NN1 or NN2 scoring functions requires Vina docking and MGLTools 1.5.6 for conversions.
+        - Extensive docking and multiple generations can be computationally intensive.
+        - Docking on the full protein or many pockets may significantly increase runtime.
+
+        Practical Recommendations
+        -------------------------
+        - Begin with small runs to validate setup before scaling to full protein/pocket sets.
+        - Apply drug-likeness filters to reduce number of unfeasible ligands.
+        - Use parallel execution to accelerate processing of multiple pockets or generations.
+        - Check receptor and ligand preparation to ensure docking compatibility.
+
+        Final Perspective
+        -----------------
+        ProtChemAutoGrow4 enables automated ligand optimization by combining fragment-based
+        growth, genetic algorithms, and docking. It supports exploration of novel chemical space
+        while selecting ligands with favorable docking scores, providing a robust tool for lead
+        optimization in computational drug discovery.
     """
     _label = 'AutoGrow4 docking and lead optimization'
 
