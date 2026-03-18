@@ -44,7 +44,58 @@ from durrantlab.protocols import ProtChemAutoGrow4
 NONE, GYPSUM, OBABEL, RDKIT = 0, 1, 2, 3
 
 class ProtChemDeepFrag(ProtChemAutoGrow4):
-    """DeepFrag lead optimization"""
+    """DeepFrag lead optimization
+
+    User IA Manual:
+
+        ProtChemDeepFrag - User Manual
+
+        The ProtChemDeepFrag protocol integrates the DeepFrag neural network into the
+        Scipion-Chem environment, enabling fragment-based ligand optimization driven by
+        learned structure–activity relationships. DeepFrag suggests chemical modifications
+        at specific ligand atoms within a protein pocket using a grid-based representation
+        of the local environment as input to a trained deep learning model.
+
+        Inputs
+        ------
+        1. **Protein-ligand complex**:
+           - PDBQT file of receptor with ligand in binding site.
+           - Ligand must contain at least one hydrogen at the atom to be replaced.
+        2. **Ligand connection point**:
+           - Atom to be replaced for fragment growth.
+           - Optional removal point for fragment replacement.
+        3. **Grid parameters**:
+           - Center and size of box around modification site.
+           - Can be manually defined or automatically derived.
+        4. **DeepFrag parameters**:
+           - Number of grid rotations (`nGrids`).
+           - Number of predictions per ligand (`topK`).
+           - Output conversion method (`toPdb`).
+
+        Workflow
+        --------
+        1. **Convert receptor and ligands**:
+           - Receptor to PDB if needed.
+           - Ligands to PDB format using OpenBabel.
+        2. **Generate fragments**:
+           - DeepFrag predicts fragment SMILES at connection point.
+        3. **Convert fragments to PDB**:
+           - Optional conversion using Gypsum-DL, OpenBabel, or RDKit.
+        4. **Create output set**:
+           - Optimized ligands with attached fragments.
+           - Annotated with DeepFrag scores.
+
+        Outputs
+        -------
+        - **Output Small Molecule Set**:
+          - Ligands with attached fragments in PDB/SDF format.
+          - Scores and metadata for each modified ligand.
+
+        Warnings
+        --------
+        - Input small molecules must be docked.
+        - At least one ligand-connection point must be added for DeepFrag execution.
+    """
     _label = 'DeepFrag lead optimization'
 
     def __init__(self, **kwargs):

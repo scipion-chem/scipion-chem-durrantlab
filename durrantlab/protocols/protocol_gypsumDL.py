@@ -44,7 +44,110 @@ argsSkipDic = {'skip_optimize_geometry': 'optGeo', 'skip_alternate_ring_conforma
 argsBoolDic = {'let_tautomers_change_chirality': 'chirChang', 'use_durrant_lab_filters': 'durrFilter'}
 
 class ProtChemGypsumDL(EMProtocol):
-    """Protocol to execute Gypsum-DL for ligand preparation"""
+    """Protocol to execute Gypsum-DL for ligand preparation
+    
+    AI Generated:
+
+        ProtChemGypsumDL - User Manual
+
+        Overview
+        --------
+        The ProtChemGypsumDL protocol integrates the Gypsum-DL ligand-preparation
+        engine into Scipion-Chem. It generates chemically realistic 3D structures
+        from input ligands by resolving stereochemistry, enumerating tautomers,
+        and assigning protonation states.
+
+        This protocol ensures that molecules are properly prepared for downstream
+        applications such as docking, virtual screening, or molecular simulations.
+
+        Input Requirements
+        ------------------
+        1. **Ligands**:
+           - Input must be provided as a SetOfSmallMolecules.
+           - Supported formats include PDB, SDF, MOL2, or similar formats compatible
+             with OpenBabel conversion.
+           - Molecules may lack 3D coordinates, stereochemistry, or protonation states.
+
+        Workflow
+        --------
+        1. **Input Conversion**:
+           - Ligands are converted into SMILES format using OpenBabel.
+           - A unified SMILES file is created as input for Gypsum-DL.
+
+        2. **Variant Generation**:
+           - Enumeration of stereoisomers (chiral centers).
+           - Enumeration of double bond configurations.
+           - Generation of tautomers.
+           - Optional protonation/deprotonation depending on pH range.
+
+        3. **3D Conformer Generation**:
+           - Multiple conformers generated per ligand.
+           - Controlled by:
+             - Maximum variants (`maxVars`)
+             - Exhaustiveness (`confExhaust`)
+
+        4. **Chemical Refinement**:
+           - Geometry optimization using force-field methods.
+           - Optional generation of alternative ring conformations.
+           - Optional filtering using Durrant Lab heuristics.
+
+        5. **pH-Dependent Processing**:
+           - Protonation states determined within a user-defined pH range.
+           - Controlled by:
+             - Minimum pH (`minPH`)
+             - Maximum pH (`maxPH`)
+             - pKa precision (`pkaPrecision`)
+
+        Outputs
+        -------
+        - **Output Small Molecule Set**:
+          - Each input ligand may generate multiple 3D variants.
+          - Each variant includes:
+            - Unique conformer ID
+            - Molecule name
+            - 3D coordinates in PDB format
+
+        - **Structure Organization**:
+          - Output molecules are renamed and indexed per original ligand.
+          - Variants are stored in a unified output directory.
+
+        - **Source Mapping**:
+          - Maintains relationship between input ligands and generated variants.
+
+        Advanced Options
+        ----------------
+        - Enable/disable:
+          - Geometry optimization
+          - Ring conformation sampling
+          - Hydrogen addition (ionization)
+          - Tautomer generation
+          - Chiral center enumeration
+          - Double bond enumeration
+
+        - Allow chirality changes during tautomerization.
+        - Apply Durrant Lab structural filters to remove unlikely molecules.
+
+        Validation & Warnings
+        ---------------------
+        - Large numbers of variants may significantly increase runtime.
+        - Excessive enumeration (tautomers, stereoisomers) can lead to
+          combinatorial explosion.
+        - Input molecules should be chemically valid to avoid failures.
+
+        Practical Recommendations
+        -------------------------
+        - Limit the number of variants for large ligand libraries.
+        - Use pH ranges consistent with biological conditions (typically 6–8).
+        - Enable filters to reduce chemically unrealistic outputs.
+        - Validate a small subset before scaling up.
+
+        Final Perspective
+        -----------------
+        ProtChemGypsumDL provides a robust ligand-preparation pipeline that transforms
+        raw chemical structures into fully specified, optimized 3D molecules. It is a
+        critical preprocessing step for reliable docking and computational drug
+        discovery workflows.
+    """
     _label = 'Gypsum ligand preparation'
 
     def __init__(self, **kwargs):

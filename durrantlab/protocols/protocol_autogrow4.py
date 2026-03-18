@@ -64,7 +64,104 @@ zincDic = {'ZINC MW <= 100 Da': 'Fragment_MW_up_to_100.smi',
                'PARPi_BRICS_frags': 'PARPi_BRICS_frags.smi'}
 
 class ProtChemAutoGrow4(ProtChemGypsumDL):
-    """AutoGrow for docking and lead optimization"""
+    """AutoGrow for docking and lead optimization
+
+    AI Generated:
+
+        ProtChemAutoGrow4 - User Manual
+
+        Overview
+        --------
+        The ProtChemAutoGrow4 protocol integrates the AutoGrow4 evolutionary algorithm
+        into Scipion-Chem for docking and lead optimization. It iteratively optimizes
+        ligands using fragment-based growth combined with genetic algorithm operations
+        (crossover, mutation) guided by docking scores as fitness functions.
+
+        This protocol is designed to generate novel, high-affinity ligands for a
+        specific protein target while considering chemical diversity and synthetic feasibility.
+
+        Input Requirements
+        ------------------
+        1. **Receptor**:
+           - Atomic structure (`AtomStruct`) for docking the whole protein, or
+           - A set of structural regions of interest (`SetOfStructROIs`) for pocket-based docking.
+           - Supported file formats: PDB, PDBQT.
+
+        2. **Ligands**:
+           - Source can be AutoGrow example libraries or user-provided small molecules (`SetOfSmallMolecules`).
+           - Initial molecules should be chemically valid and compatible with the docking backend.
+
+        3. **Optional Fragment Libraries**:
+           - Preset AutoGrow libraries (ZINC fragments, PARPi fragments, etc.) for genetic operations.
+
+        Workflow
+        --------
+        1. **Ligand Preparation**:
+           - Conversion to SMILES.
+           - Conformer generation using Gypsum-DL.
+           - pH adjustment and protonation as specified.
+
+        2. **Genetic Algorithm Setup**:
+           - Number of generations (`nGens`), population size, and elitism parameters.
+           - Mutation and crossover operations guided by reaction libraries.
+           - Selectors for fitness evaluation (Roulette, Rank, Tournament).
+
+        3. **Docking Integration**:
+           - Docking software: AutoDock Vina or QuickVina2.
+           - Docking grid defined by whole protein or structural ROI.
+           - Docking parameters: exhaustiveness, number of modes, scoring function (Vina, NN1, NN2).
+
+        4. **Molecular Filters**:
+           - Optional drug-likeness filters: Lipinski, Ghose, Mozziconacci, PAINS, NIH, BRENK.
+           - Energy threshold for accepting docking poses.
+
+        5. **Iterative Evolution**:
+           - Ligand variants generated, docked, and scored.
+           - Top ligands seeded into subsequent generations.
+           - Diversity and convergence checks applied as specified.
+
+        Outputs
+        -------
+        - **Output Small Molecule Set**:
+          - Includes all docked ligands meeting energy thresholds.
+          - Each ligand annotated with:
+            - Docking energy.
+            - Pose ID.
+            - Grid ID.
+            - Docking and genetic algorithm metadata.
+
+        - **Optional Source Relation**:
+          - Tracks which original input molecule gave rise to each evolved ligand.
+
+        Advanced Options
+        ----------------
+        - Grid radius adjustment for whole protein or pockets.
+        - Control over number of variants, conformers, and pH precision.
+        - Selector type for GA (Roulette, Rank, Tournament) with tournament size control.
+        - Docking exhaustiveness and number of poses.
+        - Filters to enforce drug-likeness or reduce undesirable chemotypes.
+        - Support for multiple regions of interest with parallel execution.
+
+        Validation & Warnings
+        ---------------------
+        - Using NN1 or NN2 scoring functions requires Vina docking and MGLTools 1.5.6 for conversions.
+        - Extensive docking and multiple generations can be computationally intensive.
+        - Docking on the full protein or many pockets may significantly increase runtime.
+
+        Practical Recommendations
+        -------------------------
+        - Begin with small runs to validate setup before scaling to full protein/pocket sets.
+        - Apply drug-likeness filters to reduce number of unfeasible ligands.
+        - Use parallel execution to accelerate processing of multiple pockets or generations.
+        - Check receptor and ligand preparation to ensure docking compatibility.
+
+        Final Perspective
+        -----------------
+        ProtChemAutoGrow4 enables automated ligand optimization by combining fragment-based
+        growth, genetic algorithms, and docking. It supports exploration of novel chemical space
+        while selecting ligands with favorable docking scores, providing a robust tool for lead
+        optimization in computational drug discovery.
+    """
     _label = 'AutoGrow4 docking and lead optimization'
 
     def __init__(self, **kwargs):
