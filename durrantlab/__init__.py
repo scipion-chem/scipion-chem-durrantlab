@@ -106,17 +106,19 @@ class Plugin(pwchem.Plugin):
         installer = InstallHelper(MGL_DIC['name'], packageHome=cls.getVar(MGL_DIC['home']),
                                   packageVersion=MGL_DIC['version'])
 
-        mglEnvName = cls.getEnvName(MGL_DIC)
+        defTar = cls.getDefTar(MGL_DIC)
 
         installer.addCommand(
-            f'conda create -y -n {mglEnvName} -c conda-forge -c bioconda mgltools={MGL_DIC["version"]}',
-            'MGLTOOLS_ENV_CREATED'
+            f'wget {cls.getMGLToolsURL()} -O {defTar} --no-check-certificate && '
+            f'tar -xf {defTar} --strip-components 1 && '
+            f'rm {defTar}',
+            'MGLTOOLS_DOWNLOADED'
         ).addCommand(
-            f'{cls.getEnvActivationCommand(MGL_DIC)} && '
-            f'rm -rf {cls.getVar(MGL_DIC["home"])} && '
-            f'ln -s $CONDA_PREFIX {cls.getVar(MGL_DIC["home"])}',
-            'MGLTOOLS_SYMLINK_CREATED'
-        ).addPackage(env, dependencies=['conda'], default=default)
+            f'cp install.sh install.bash && '
+            f'sed -i "s/bin\/sh/bin\/bash/g" install.bash && '
+            f'{cls.getDefPath(MGL_DIC, "install.bash")}',
+            'MGLTOOLS_INSTALLED'
+        ).addPackage(env, dependencies=[], default=default)
 
     # ---------------------------------- Utils functions  -----------------------
     @classmethod
