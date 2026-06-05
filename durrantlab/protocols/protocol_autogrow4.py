@@ -271,7 +271,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         args += self.getConversionArgs()
         args += self.getArgs()
 
-        Plugin.runScript(self, 'run_autogrow.py', args, env=AGROW_DIC,
+        Plugin.runScript(self, 'RunAutogrow.py', args, env=AGROW_DIC,
                                   cwd=self._getExtraPath(),
                                   scriptDir=Plugin.getProgramHome(AGROW_DIC, path='autogrow4'))
 

@@ -94,10 +94,10 @@ class Plugin(pwchem.Plugin):
             f'conda install -y -c openbabel openbabel=2.4',
             'AUTOGROW_DEPS_INSTALLED'
         ).addCommand(
-            f'wget {cls.getAutoGrowUrl()} && '
-            f'unzip -q autogrow4-4.0.3.zip && '
+            f'wget {cls.getAutoGrowUrl()} -O autogrow4.zip && '
+            f'unzip autogrow4.zip && '
             f'mv autogrow4-4.0.3 autogrow4 && '
-            f'rm v4.0.3.zip',
+            f'rm autogrow4.zip',
             'AUTOGROW_DOWNLOADED'
         ).addPackage(env, dependencies=['conda'], default=default)
 
