@@ -53,37 +53,56 @@ class Plugin(pwchem.Plugin):
 
     @classmethod
     def addDeepFragPackage(cls, env, default=False):
-        DFRAG_INSTALLED = 'deepFrag_installed'
-        dFragCommands = 'git clone {} && cd deepfrag && '.format(cls.getDeepFragGithub())
-        dFragCommands += 'conda create -y -n {} -c fastai -c conda-forge --file requirements.txt prody=1.11 rdkit && '\
-            .format(cls.getEnvName(DFRAG_DIC))
-        dFragCommands += '{} && pip install pyparsing==2.4.7 torch && '.format(cls.getEnvActivationCommand(DFRAG_DIC))
-        dFragCommands += "mkdir .store && wget {} -P .store && wget {} -O DFModel.zip && " \
-                         "unzip DFModel.zip -d .store/model && ".\
-            format(cls.getDeepFragFingerprints(), cls.getDeepFragModel())
-        dFragCommands += 'touch ../{}'.format(DFRAG_INSTALLED)
-        dFragCommands = [(dFragCommands, DFRAG_INSTALLED)]
+        installer = InstallHelper(DFRAG_DIC['name'], packageHome=cls.getVar(DFRAG_DIC['home']),
+                                  packageVersion=DFRAG_DIC['version'])
 
-        env.addPackage(DFRAG_DIC['name'], version=DFRAG_DIC['version'],
-                       tar='void.tgz', commands=dFragCommands, default=default)
+        envName = cls.getEnvName(DFRAG_DIC)
+        envActivation = cls.getEnvActivationCommand(DFRAG_DIC)
+
+        installer.addCommand(
+            f'git clone {cls.getDeepFragGithub()} && '
+            f'cd deepfrag && '
+            f'conda create -y -n {envName} -c fastai -c conda-forge --file requirements.txt prody=1.11 rdkit',
+            'DEEPFRAG_ENV_CREATED'
+        ).addCommand(
+            f'{envActivation} && pip install pyparsing==2.4.7 torch',
+            'DEEPFRAG_DEPS_INSTALLED'
+        ).addCommand(
+            f'cd deepfrag && '
+            f'mkdir -p .store && '
+            f'wget {cls.getDeepFragFingerprints()} -P .store && '
+            f'wget {cls.getDeepFragModel()} -O DFModel.zip && '
+            f'unzip DFModel.zip -d .store/model && '
+            f'rm DFModel.zip',
+            'DEEPFRAG_MODELS_DOWNLOADED'
+        ).addPackage(env, dependencies=['conda'], default=default)
 
     @classmethod
     def addAutoGrowPackage(cls, env, default=False):
-        AGROW_INSTALLED = 'autogrow_installed'
-        agrowCommands = 'conda create -y -n {} -c rdkit rdkit=2020.09 python=3.7 && '.format(cls.getEnvName(AGROW_DIC))
-        agrowCommands += '{} && '.format(cls.getEnvActivationCommand(AGROW_DIC))
-        agrowCommands += 'conda install -y numpy=1.21 scipy=1.7 matplotlib=3.5 func_timeout=4.3 && '
-        agrowCommands += 'conda install -y -c openbabel openbabel=2.4 && '
-        agrowCommands += 'git clone {} && '.format(cls.getAutoGrowGithub())
-        agrowCommands += 'touch {}'.format(AGROW_INSTALLED)
-        agrowCommands = [(agrowCommands, AGROW_INSTALLED)]
+        installer = InstallHelper(AGROW_DIC['name'], packageHome=cls.getVar(AGROW_DIC['home']),
+                                  packageVersion=AGROW_DIC['version'])
 
-        env.addPackage(AGROW_DIC['name'], version=AGROW_DIC['version'],
-                       tar='void.tgz', commands=agrowCommands, default=default)
+        envName = cls.getEnvName(AGROW_DIC)
+        envActivation = cls.getEnvActivationCommand(AGROW_DIC)
+
+        installer.addCommand(
+            f'conda create -y -n {envName} -c rdkit rdkit=2020.09 python=3.7',
+            'AUTOGROW_ENV_CREATED'
+        ).addCommand(
+            f'{envActivation} && '
+            f'conda install -y numpy=1.21 scipy=1.7 matplotlib=3.5 func_timeout=4.3 && '
+            f'conda install -y -c openbabel openbabel=2.4',
+            'AUTOGROW_DEPS_INSTALLED'
+        ).addCommand(
+            f'wget {cls.getAutoGrowUrl()} && '
+            f'unzip -q autogrow4-4.0.3.zip && '
+            f'mv autogrow4-4.0.3 autogrow4 && '
+            f'rm v4.0.3.zip',
+            'AUTOGROW_DOWNLOADED'
+        ).addPackage(env, dependencies=['conda'], default=default)
 
     @classmethod
     def addMGLToolsPackage(cls, env, default=True):
-        # Instantiating install helper
         installer = InstallHelper(MGL_DIC['name'], packageHome=cls.getVar(MGL_DIC['home']),
                                   packageVersion=MGL_DIC['version'])
 
@@ -107,8 +126,8 @@ class Plugin(pwchem.Plugin):
         return os.path.join(fnDir, path)
 
     @classmethod
-    def getAutoGrowGithub(cls):
-      return 'https://github.com/durrantlab/autogrow4.git'
+    def getAutoGrowUrl(cls):
+        return 'https://github.com/durrantlab/autogrow4/archive/refs/tags/v4.0.3.zip'
 
     @classmethod
     def getDeepFragGithub(cls):
@@ -125,4 +144,3 @@ class Plugin(pwchem.Plugin):
     @classmethod
     def getMGLToolsURL(cls):
         return 'https://ccsb.scripps.edu/download/548/'
-
