@@ -36,7 +36,7 @@ from pwchem.objects import SetOfSmallMolecules, SmallMolecule
 from pwchem.utils import runOpenBabel, calculate_centerMass, getBaseName
 
 from durrantlab import Plugin
-from durrantlab import AGROW_DIC
+from durrantlab import AGROW_DIC, MGL_DIC
 from durrantlab.protocols.protocol_gypsumDL import ProtChemGypsumDL
 
 argsDic = {'max_variants_per_compound': 'maxVars', # 'gypsum_thoroughness': 'confExhaust',
@@ -246,8 +246,8 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         receptorFile = self.getOriginalReceptorFile()
         if receptorFile.endswith('.pdb'):
           shutil.copy(receptorFile, self.getReceptorPDB())
-        elif receptorFile.endswith('.pdbqt'):
-          self.convertReceptor2PDB(receptorFile)
+        elif receptorFile.endswith(('.pdbqt','.cif')):
+          outPdb = self.convertReceptor2PDB(receptorFile)
 
     def dockStep(self, pocket=None):
         '''Executes AutoGrow to dock and generate ligand variants to look for the best hits'''
@@ -271,7 +271,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         args += self.getConversionArgs()
         args += self.getArgs()
 
-        Plugin.runScript(self, 'RunAutogrow.py', args, env=AGROW_DIC,
+        Plugin.runScript(self, 'run_autogrow.py', args, env=AGROW_DIC,
                                   cwd=self._getExtraPath(),
                                   scriptDir=Plugin.getProgramHome(AGROW_DIC, path='autogrow4'))
 
@@ -443,7 +443,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         return oFile
 
     def getConversionArgs(self):
-        mglPath = Plugin.getDefPath({'name': 'mgltools', 'version': '1.5.6'})
+        mglPath = Plugin.getDefPath(MGL_DIC)
         if os.path.exists(mglPath):
             args = ' --conversion_choice MGLToolsConversion --mgltools_directory {}'.format(mglPath)
         else:

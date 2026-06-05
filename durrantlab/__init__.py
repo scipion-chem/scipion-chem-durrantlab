@@ -27,6 +27,7 @@
 import os, subprocess
 
 import pwchem
+from scipion.install.funcs import InstallHelper
 
 from .constants import *
 
@@ -81,20 +82,22 @@ class Plugin(pwchem.Plugin):
                        tar='void.tgz', commands=agrowCommands, default=default)
 
     @classmethod
-    def addMGLToolsPackage(cls, env, default=False):
-        MGL_INSTALLED = "initMGLtools.sh"
-        mgl_commands = 'wget {} -O {} --no-check-certificate && '. \
-            format(cls.getMGLToolsURL(), cls.getDefTar(MGL_DIC))
-        mgl_commands += 'tar -xf {} --strip-components 1 && rm {} &&'.format(*[cls.getDefTar(MGL_DIC)] * 2)
-        mgl_commands += 'cp install.sh install.bash && sed -i "s/bin\/sh/bin\/bash/g" install.bash && '
-        mgl_commands += '{} && '.format(cls.getDefPath(MGL_DIC, 'install.bash'))
-        mgl_commands += 'touch ' + MGL_INSTALLED
-        mgl_commands = [(mgl_commands, MGL_INSTALLED)]
+    def addMGLToolsPackage(cls, env, default=True):
+        # Instantiating install helper
+        installer = InstallHelper(MGL_DIC['name'], packageHome=cls.getVar(MGL_DIC['home']),
+                                  packageVersion=MGL_DIC['version'])
 
-        env.addPackage(MGL_DIC['name'], version=MGL_DIC['version'],
-                       tar='void.tgz',
-                       commands=mgl_commands,
-                       default=True)
+        mglEnvName = cls.getEnvName(MGL_DIC)
+
+        installer.addCommand(
+            f'conda create -y -n {mglEnvName} -c conda-forge -c bioconda mgltools={MGL_DIC["version"]}',
+            'MGLTOOLS_ENV_CREATED'
+        ).addCommand(
+            f'{cls.getEnvActivationCommand(MGL_DIC)} && '
+            f'rm -rf {cls.getVar(MGL_DIC["home"])} && '
+            f'ln -s $CONDA_PREFIX {cls.getVar(MGL_DIC["home"])}',
+            'MGLTOOLS_SYMLINK_CREATED'
+        ).addPackage(env, dependencies=['conda'], default=default)
 
     # ---------------------------------- Utils functions  -----------------------
     @classmethod
