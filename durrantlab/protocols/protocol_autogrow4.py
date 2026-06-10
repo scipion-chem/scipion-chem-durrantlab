@@ -405,14 +405,31 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         oDir = self.getInputLigandsPath()
         if not os.path.exists(oDir):
             os.mkdir(oDir)
+
         if self.ligandsSource.get() == 1:
-          allMols = self.getLigandsFileNames()
-          runOpenBabel(self, '{} -O {}'.format(' '.join(allMols), self.getInputSMIFile()),
-                       popen=True)
+            allMols = self.getLigandsFileNames()
+            inputSMIFile = self.getInputSMIFile()
+
+            with open(inputSMIFile, 'w') as f:
+                pass
+
+            batch_size = 300
+            for i in range(0, len(allMols), batch_size):
+                batch = allMols[i:i + batch_size]
+                tmp_output = "{}_batch_{}.smi".format(inputSMIFile, i)
+
+                runOpenBabel(self, '{} -O {}'.format(' '.join(batch), tmp_output),
+                             popen=True)
+
+                if os.path.exists(tmp_output):
+                    with open(inputSMIFile, 'a') as main_f:
+                        with open(tmp_output, 'r') as tmp_f:
+                            main_f.write(tmp_f.read())
+                    os.remove(tmp_output)
         else:
-          inSMIFile = Plugin.getProgramHome(AGROW_DIC, path='autogrow4/source_compounds/{}'.
-                                                    format(zincDic[self.getEnumText('inputAGrowMols')]))
-          shutil.copy(inSMIFile, self.getInputSMIFile())
+            inSMIFile = Plugin.getProgramHome(AGROW_DIC, path='autogrow4/source_compounds/{}'.
+                                              format(zincDic[self.getEnumText('inputAGrowMols')]))
+            shutil.copy(inSMIFile, self.getInputSMIFile())
 
     def getOriginalReceptorFile(self):
         if self.fromReceptor.get() == 0:

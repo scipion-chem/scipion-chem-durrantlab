@@ -105,7 +105,7 @@ class TestDeepFrag(TestExtractLigand):
         return protGyp
 
     def test(self):
-        protExtract = self._runExtractLigand(self.protImportPDB)
+        protExtract = self._runExtractLigand(self.protImportPDB, '{"model": 0, "chain": "A", "residues": 92}')
         self._waitOutput(protExtract, 'outputSmallMolecules')
 
         protDeepFrag = self._runDeepFrag(inProt=protExtract)
