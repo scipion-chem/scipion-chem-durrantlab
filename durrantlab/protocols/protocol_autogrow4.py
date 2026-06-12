@@ -26,8 +26,7 @@
 
 import os, shutil
 
-from pwem.protocols import EMProtocol
-from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, STEPS_PARALLEL, BooleanParam, \
+from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, BooleanParam, \
   LEVEL_ADVANCED, StringParam, EnumParam
 import pyworkflow.object as pwobj
 from pyworkflow.utils.path import makePath
@@ -66,10 +65,7 @@ zincDic = {'ZINC MW <= 100 Da': 'Fragment_MW_up_to_100.smi',
 class ProtChemAutoGrow4(ProtChemGypsumDL):
     """AutoGrow for docking and lead optimization"""
     _label = 'AutoGrow4 docking and lead optimization'
-
-    def __init__(self, **kwargs):
-        EMProtocol.__init__(self, **kwargs)
-        self.stepsExecutionMode = STEPS_PARALLEL
+    # Parallel step execution mode is inherited from ProtChemGypsumDL
 
     def _defineParams(self, form):
         form.addSection(label='Input')
@@ -247,7 +243,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         if receptorFile.endswith('.pdb'):
           shutil.copy(receptorFile, self.getReceptorPDB())
         elif receptorFile.endswith(('.pdbqt','.cif')):
-          outPdb = self.convertReceptor2PDB(receptorFile)
+          self.convertReceptor2PDB(receptorFile)
 
     def dockStep(self, pocket=None):
         '''Executes AutoGrow to dock and generate ligand variants to look for the best hits'''
@@ -361,14 +357,6 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
             if line.startswith('REMARK VINA RESULT:'):
               return float(line.split()[3])
 
-    def performEnergyFilter(self, dockDic, maxEnergy):
-      '''Remove those docked models with a higher energy than the specified threshold'''
-      for model in dockDic:
-        energy = self.parseModelEnergy(dockDic[model])
-        if energy > maxEnergy:
-          del dockDic[model]
-      return dockDic
-
     def compressResults(self, genDir):
       args = '--compress_or_decompress compress --input_folder_or_file {}'.format(os.path.abspath(genDir))
       Plugin.runScript(self, 'accessory_scripts/file_concatenate_and_compression.py', args, env=AGROW_DIC,
@@ -444,9 +432,6 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
     def getReceptorDir(self):
         fnReceptor = self.getOriginalReceptorFile()
         return os.path.dirname(fnReceptor)
-
-    def getReceptorPDBQT(self):
-        return os.path.abspath(self._getExtraPath('{}.pdbqt'.format(self.getReceptorName())))
 
     def getReceptorPDB(self):
         return os.path.abspath(self._getExtraPath('{}.pdb'.format(self.getReceptorName())))

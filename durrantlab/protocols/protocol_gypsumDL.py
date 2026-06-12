@@ -33,7 +33,7 @@ import pyworkflow.object as pwobj
 from pyworkflow.utils.path import makePath
 
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
-from pwchem.utils import runOpenBabel, calculate_centerMass
+from pwchem.utils import runOpenBabel
 
 from durrantlab import Plugin
 from durrantlab import AGROW_DIC
@@ -48,7 +48,7 @@ class ProtChemGypsumDL(EMProtocol):
     _label = 'Gypsum ligand preparation'
 
     def __init__(self, **kwargs):
-        EMProtocol.__init__(self, **kwargs)
+        super().__init__(**kwargs)
         self.stepsExecutionMode = STEPS_PARALLEL
 
     def _defineGypsumDLParams(self, form):
@@ -145,7 +145,6 @@ class ProtChemGypsumDL(EMProtocol):
       self._defineSourceRelation(self.inputSmallMolecules, outputSet)
 
     ################################################
-    # todo: tests
     def getInputLigandsPath(self, path=''):
         return os.path.abspath(self._getExtraPath('inputLigands', path))
 

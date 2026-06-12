@@ -26,8 +26,7 @@
 
 import os, shutil, json
 
-from pwem.protocols import EMProtocol
-from pyworkflow.protocol.params import PointerParam, IntParam, TextParam, STEPS_PARALLEL, LabelParam, \
+from pyworkflow.protocol.params import PointerParam, IntParam, TextParam, LabelParam, \
   LEVEL_ADVANCED, StringParam, EnumParam
 from pyworkflow.protocol import params
 import pyworkflow.object as pwobj
@@ -47,10 +46,7 @@ NONE, GYPSUM, OBABEL, RDKIT = 0, 1, 2, 3
 class ProtChemDeepFrag(ProtChemAutoGrow4):
     """DeepFrag lead optimization"""
     _label = 'DeepFrag lead optimization'
-
-    def __init__(self, **kwargs):
-        EMProtocol.__init__(self, **kwargs)
-        self.stepsExecutionMode = STEPS_PARALLEL
+    # Parallel step execution mode is inherited from ProtChemGypsumDL
 
     def _defineParams(self, form):
         form.addHidden(params.USE_GPU, params.BooleanParam, default=True,
@@ -158,7 +154,7 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
         if outFile.endswith('.csv'):
           molName = outFile.split('.')[0]
           smiDic = self.parseOutMols(self._getExtraPath(outFile))
-          print(smiDic)
+          self.info('Parsed {} predicted molecules from {}'.format(len(smiDic), outFile))
           molDic = self.convertSMIToPDB(smiDic, outDir, molName)
 
           for smi in molDic:
@@ -266,5 +262,6 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
       return vals
 
     def _warnings(self):
-      warns = []
-      return warns
+      # Intentionally overrides ProtChemAutoGrow4._warnings: the parent's implementation
+      # reads self.fromReceptor / self.inputStructROIs, which do not exist in DeepFrag.
+      return []
