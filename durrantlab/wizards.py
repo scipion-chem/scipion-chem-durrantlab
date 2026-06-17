@@ -128,7 +128,7 @@ class ViewInputLigandWizard(VariableWizard):
           shutil.copy(os.path.abspath(molFile), oFile)
 
       relabelAtomsPDB(oFile)
-      return molFile
+      return oFile
 
   def show(self, form, *params):
     inputParam, _ = self.getInputOutput(form)
@@ -142,6 +142,7 @@ class ViewInputLigandWizard(VariableWizard):
 
     pmlsDir = project.getTmpPath()
     pmlFile = os.path.join(pmlsDir, '{}.pml'.format(molName))
+    tmpPdbPath = protocol.getMolTmpPDBPath(molFile)
     molFile = self.getMolPDBFile(molFile, tmpPdbPath)
     self.writePmlFile(pmlFile, molFile, molName, targetFile)
 
