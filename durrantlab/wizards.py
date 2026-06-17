@@ -117,17 +117,17 @@ class ViewInputLigandWizard(VariableWizard):
     with open(pmlFile, 'w') as f:
       f.write(pmlStr)
 
-  def getMolPDBFile(self, molFile):
+  def getMolPDBFile(self, molFile, oFile):
+      '''Convert (if needed) and relabel into oFile, never touching the source file'''
+      oDir = os.path.dirname(oFile)
       if not molFile.endswith('.pdb'):
-          oDir = os.path.dirname(molFile)
-
-          inName, inExt = os.path.splitext(os.path.basename(molFile))
-          oFile = os.path.abspath(os.path.join(oDir, inName + '.pdb'))
-
+          inExt = os.path.splitext(os.path.basename(molFile))[1]
           args = ' -i{} {} -opdb -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
           runOpenBabel(None, args=args, cwd=oDir, popen=True)
-          molFile = oFile
-      molFile = relabelAtomsPDB(molFile)
+      else:
+          shutil.copy(os.path.abspath(molFile), oFile)
+
+      relabelAtomsPDB(oFile)
       return molFile
 
   def show(self, form, *params):
@@ -142,7 +142,7 @@ class ViewInputLigandWizard(VariableWizard):
 
     pmlsDir = project.getTmpPath()
     pmlFile = os.path.join(pmlsDir, '{}.pml'.format(molName))
-    molFile = self.getMolPDBFile(molFile)
+    molFile = self.getMolPDBFile(molFile, tmpPdbPath)
     self.writePmlFile(pmlFile, molFile, molName, targetFile)
 
     pymolV = PyMolViewer(project=project)

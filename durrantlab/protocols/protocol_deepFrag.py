@@ -97,15 +97,15 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
         form.addParallelSection(threads=4, mpi=1)
 
     def _insertAllSteps(self):
-      cId = self._insertFunctionStep('convertStep', prerequisites=[])
+      cId = self._insertFunctionStep(self.convertStep, prerequisites=[])
 
       dockSteps = []
       for it, ligandStr in enumerate(self.ligandList.get().split('\n')):
           if ligandStr.strip():
-              dockId = self._insertFunctionStep('dFragStep', ligandStr, prerequisites=[cId])
+              dockId = self._insertFunctionStep(self.dFragStep, ligandStr, prerequisites=[cId])
               dockSteps.append(dockId)
 
-      self._insertFunctionStep('createOutputStep', prerequisites=dockSteps)
+      self._insertFunctionStep(self.createOutputStep, prerequisites=dockSteps)
 
     def convertStep(self):
         receptorFile = self.getOriginalReceptorFile()
@@ -122,9 +122,13 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
         for molFile in allMols:
             inName, inExt = os.path.splitext(os.path.basename(molFile))
             oFile = os.path.join(oDir, inName + '.pdb')
-
-            args = ' -i{} {} -opdb -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
-            runOpenBabel(protocol=self, args=args, cwd=oDir)
+            # Reuse the relabeled PDB if the wizard already produced one
+            tmpPdbPath = self.getMolTmpPDBPath(molFile)
+            if os.path.exists(tmpPdbPath):
+                shutil.copy(tmpPdbPath, oFile)
+            else:
+                args = ' -i{} {} -opdb -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
+                runOpenBabel(protocol=self, args=args, cwd=oDir)
 
     def dFragStep(self, ligStr):
         '''Executes AutoGrow to dock and generate ligand variants to look for the best hits'''
@@ -172,6 +176,11 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
     ################################################
     def getOriginalReceptorFile(self):
       return self.inputSmallMolecules.get().getProteinFile()
+
+    def getMolTmpPDBPath(self, molFile):
+        '''Project tem path for the relabeled ligand PDB produced by the view wizard'''
+        base = os.path.splitext(os.path.basename(molFile))[0]
+        return os.path.abspath(self.getProject().getTmpPath('{}.pdb'.format(base)))
 
     def parseLigandLine(self, ligandLine):
       return json.loads(ligandLine)
