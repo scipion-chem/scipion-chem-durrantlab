@@ -248,7 +248,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         if receptorFile.endswith('.pdb'):
           shutil.copy(receptorFile, self.getReceptorPDB())
         elif receptorFile.endswith(('.pdbqt','.cif')):
-          outPdb = self.convertReceptor2PDB(receptorFile)
+          self.convertReceptor2PDB(receptorFile)
 
     def dockStep(self, pocket=None):
         '''Executes AutoGrow to dock and generate ligand variants to look for the best hits'''
@@ -411,22 +411,20 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
             allMols = self.getLigandsFileNames()
             inputSMIFile = self.getInputSMIFile()
 
-            with open(inputSMIFile, 'w') as f:
-                pass
+            open(inputSMIFile, 'w').close()  # start empty: batches are appended
 
-            batch_size = 300
-            for i in range(0, len(allMols), batch_size):
-                batch = allMols[i:i + batch_size]
-                tmp_output = "{}_batch_{}.smi".format(inputSMIFile, i)
+            batchSize = 300
+            for i in range(0, len(allMols), batchSize):
+                batch = allMols[i:i + batchSize]
+                tmpOutput = "{}_batch_{}.smi".format(inputSMIFile, i)
 
-                runOpenBabel(self, '{} -O {}'.format(' '.join(batch), tmp_output),
+                runOpenBabel(self, '{} -O {}'.format(' '.join(batch), tmpOutput),
                              popen=True)
 
-                if os.path.exists(tmp_output):
-                    with open(inputSMIFile, 'a') as main_f:
-                        with open(tmp_output, 'r') as tmp_f:
-                            main_f.write(tmp_f.read())
-                    os.remove(tmp_output)
+                if os.path.exists(tmpOutput):
+                    with open(inputSMIFile, 'a') as mainF, open(tmpOutput) as tmpF:
+                        mainF.write(tmpF.read())
+                    os.remove(tmpOutput)
         else:
             inSMIFile = Plugin.getProgramHome(AGROW_DIC, path='autogrow4/source_compounds/{}'.
                                               format(zincDic[self.getEnumText('inputAGrowMols')]))

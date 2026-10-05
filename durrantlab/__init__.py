@@ -29,6 +29,7 @@ import os, subprocess
 import pwchem
 from scipion.install.funcs import InstallHelper
 
+from pwchem.constants import MGL_DIC
 from .constants import *
 
 _version_ = '0.1'
@@ -40,6 +41,7 @@ class Plugin(pwchem.Plugin):
     def _defineVariables(cls):
         """ Return and write a variable in the config file.
         """
+        cls._defineEmVar(MGL_DIC['home'], '{}-{}'.format(MGL_DIC['name'], MGL_DIC['version']))
         cls._defineEmVar(AGROW_DIC['home'], '{}-{}'.format(AGROW_DIC['name'], AGROW_DIC['version']))
         cls._defineEmVar(DFRAG_DIC['home'], '{}-{}'.format(DFRAG_DIC['name'], DFRAG_DIC['version']))
         cls._defineVar("AUTOGROW_ENV_ACTIVATION", cls.getEnvActivationCommand(AGROW_DIC))
@@ -47,8 +49,7 @@ class Plugin(pwchem.Plugin):
 
     @classmethod
     def defineBinaries(cls, env):
-        # pwchem's MGLTools: skipped if already declared or already installed in software/em
-        pwchem.Plugin.addMGLToolsPackage(env)
+        pwchem.Plugin.addMGLToolsPackage(env)  # pwchem's MGLTools, used by AutoGrow4; skipped if already installed
         cls.addAutoGrowPackage(env, default=bool(cls.getCondaActivationCmd()))
         cls.addDeepFragPackage(env, default=bool(cls.getCondaActivationCmd()))
 
