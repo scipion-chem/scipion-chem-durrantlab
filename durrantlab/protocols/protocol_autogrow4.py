@@ -34,9 +34,10 @@ from pyworkflow.utils.path import makePath
 
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
 from pwchem.utils import runOpenBabel, calculate_centerMass, getBaseName
+from pwchem.constants import MGL_DIC
 
 from durrantlab import Plugin
-from durrantlab import AGROW_DIC, MGL_DIC
+from durrantlab import AGROW_DIC
 from durrantlab.protocols.protocol_gypsumDL import ProtChemGypsumDL
 
 argsDic = {'max_variants_per_compound': 'maxVars', # 'gypsum_thoroughness': 'confExhaust',
@@ -460,7 +461,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         return oFile
 
     def getConversionArgs(self):
-        mglPath = Plugin.getDefPath(MGL_DIC)
+        mglPath = Plugin.getProgramHome(MGL_DIC)
         if os.path.exists(mglPath):
             args = ' --conversion_choice MGLToolsConversion --mgltools_directory {}'.format(mglPath)
         else:
@@ -489,11 +490,8 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
 
     def _validate(self):
       vals = []
-      if self.getEnumText('scoreChoice') != 'VINA':
-        mglPath = Plugin.getDefPath({'name': 'mgltools', 'version': '1.5.6'})
-        if self.getEnumText('dockChoice') != 'VinaDocking' or not os.path.exists(mglPath):
-          vals.append('In order to use NN1 or NN2 scoring functions, Vina docking must be selected and conversions '
-                      'must be performed using MGLTools 1.5.6')
+      if self.getEnumText('scoreChoice') != 'VINA' and self.getEnumText('dockChoice') != 'VinaDocking':
+          vals.append('In order to use NN1 or NN2 scoring functions, Vina docking must be selected')
       return vals
 
     def _warnings(self):

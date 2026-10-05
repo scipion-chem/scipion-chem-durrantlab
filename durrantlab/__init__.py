@@ -47,7 +47,8 @@ class Plugin(pwchem.Plugin):
 
     @classmethod
     def defineBinaries(cls, env):
-        cls.addMGLToolsPackage(env, default=bool(cls.getCondaActivationCmd()))
+        # pwchem's MGLTools: skipped if already declared or already installed in software/em
+        pwchem.Plugin.addMGLToolsPackage(env)
         cls.addAutoGrowPackage(env, default=bool(cls.getCondaActivationCmd()))
         cls.addDeepFragPackage(env, default=bool(cls.getCondaActivationCmd()))
 
@@ -59,13 +60,16 @@ class Plugin(pwchem.Plugin):
         envName = cls.getEnvName(DFRAG_DIC)
         envActivation = cls.getEnvActivationCommand(DFRAG_DIC)
 
+        # Only the inference deps: deepfrag's requirements.txt is a 2020 training freeze that takes hours to solve
         installer.addCommand(
             f'git clone {cls.getDeepFragGithub()} && '
-            f'cd deepfrag && '
-            f'conda create -y -n {envName} -c fastai -c conda-forge --file requirements.txt prody=1.11 rdkit',
+            f'conda create -y -n {envName} --override-channels -c conda-forge '
+            f'python=3.11 "numpy<2" h5py numba=0.61 rdkit=2023.09 prody tqdm requests',
             'DEEPFRAG_ENV_CREATED'
         ).addCommand(
-            f'{envActivation} && pip install pyparsing==2.4.7 torch',
+            # numba's built-in CUDA fails on CUDA 13 drivers: use numba-cuda with its ctypes driver binding
+            f'{envActivation} && pip install torch==2.6.0 "numba-cuda[cu12]==0.15.2" && '
+            f'conda env config vars set NUMBA_CUDA_USE_NVIDIA_BINDING=0',
             'DEEPFRAG_DEPS_INSTALLED'
         ).addCommand(
             f'cd deepfrag && '
@@ -101,25 +105,6 @@ class Plugin(pwchem.Plugin):
             'AUTOGROW_DOWNLOADED'
         ).addPackage(env, dependencies=['conda'], default=default)
 
-    @classmethod
-    def addMGLToolsPackage(cls, env, default=True):
-        installer = InstallHelper(MGL_DIC['name'], packageHome=cls.getVar(MGL_DIC['home']),
-                                  packageVersion=MGL_DIC['version'])
-
-        defTar = cls.getDefTar(MGL_DIC)
-
-        installer.addCommand(
-            f'wget {cls.getMGLToolsURL()} -O {defTar} --no-check-certificate && '
-            f'tar -xf {defTar} --strip-components 1 && '
-            f'rm {defTar}',
-            'MGLTOOLS_DOWNLOADED'
-        ).addCommand(
-            f'cp install.sh install.bash && '
-            f'sed -i "s/bin\/sh/bin\/bash/g" install.bash && '
-            f'{cls.getDefPath(MGL_DIC, "install.bash")}',
-            'MGLTOOLS_INSTALLED'
-        ).addPackage(env, dependencies=[], default=default)
-
     # ---------------------------------- Utils functions  -----------------------
     @classmethod
     def getPluginHome(cls, path=""):
@@ -142,7 +127,3 @@ class Plugin(pwchem.Plugin):
     @classmethod
     def getDeepFragModel(cls):
         return 'https://durrantlab.pitt.edu/apps/deepfrag/files/final_model_v2.zip'
-
-    @classmethod
-    def getMGLToolsURL(cls):
-        return 'https://ccsb.scripps.edu/download/548/'
