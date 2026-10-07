@@ -29,7 +29,6 @@ import os, subprocess
 import pwchem
 from scipion.install.funcs import InstallHelper
 
-from pwchem.constants import MGL_DIC
 from .constants import *
 
 _version_ = '0.1'
@@ -41,7 +40,6 @@ class Plugin(pwchem.Plugin):
     def _defineVariables(cls):
         """ Return and write a variable in the config file.
         """
-        cls._defineEmVar(MGL_DIC['home'], '{}-{}'.format(MGL_DIC['name'], MGL_DIC['version']))
         cls._defineEmVar(AGROW_DIC['home'], '{}-{}'.format(AGROW_DIC['name'], AGROW_DIC['version']))
         cls._defineEmVar(DFRAG_DIC['home'], '{}-{}'.format(DFRAG_DIC['name'], DFRAG_DIC['version']))
         cls._defineVar("AUTOGROW_ENV_ACTIVATION", cls.getEnvActivationCommand(AGROW_DIC))
@@ -49,7 +47,6 @@ class Plugin(pwchem.Plugin):
 
     @classmethod
     def defineBinaries(cls, env):
-        pwchem.Plugin.addMGLToolsPackage(env)  # pwchem's MGLTools, used by AutoGrow4; skipped if already installed
         cls.addAutoGrowPackage(env, default=bool(cls.getCondaActivationCmd()))
         cls.addDeepFragPackage(env, default=bool(cls.getCondaActivationCmd()))
 
@@ -101,10 +98,17 @@ class Plugin(pwchem.Plugin):
         ).addCommand(
             f'wget {cls.getAutoGrowUrl()} -O autogrow4.zip && '
             f'unzip autogrow4.zip && '
-            f'mv autogrow4-4.0.3 autogrow4 && '
+            f'mv autogrow4-{AGROW_DIC["version"]} autogrow4 && '
             f'rm autogrow4.zip',
             'AUTOGROW_DOWNLOADED'
-        ).addPackage(env, dependencies=['conda'], default=default)
+        ).addCommand(
+            # AutoGrow4's own MGLTools 1.5.6 (binary, no conda): 1.5.7's prepare_ligand4.py breaks AutoGrow4
+            f'mkdir -p mgltools && cd mgltools && '
+            f'wget {cls.getMGLToolsURL()} -O mgltools.tgz --no-check-certificate && '
+            f'tar -xf mgltools.tgz --strip-components 1 && rm mgltools.tgz && '
+            f'cp install.sh install.bash && sed -i "1s|/bin/sh|/bin/bash|" install.bash && ./install.bash',
+            'AUTOGROW_MGLTOOLS_INSTALLED'
+        ).addPackage(env, dependencies=['conda', 'wget', 'tar'], default=default)
 
     # ---------------------------------- Utils functions  -----------------------
     @classmethod
@@ -115,7 +119,12 @@ class Plugin(pwchem.Plugin):
 
     @classmethod
     def getAutoGrowUrl(cls):
-        return 'https://github.com/durrantlab/autogrow4/archive/refs/tags/v4.0.3.zip'
+        return f'https://github.com/durrantlab/autogrow4/archive/refs/tags/v{AGROW_DIC["version"]}.zip'
+
+    @classmethod
+    def getMGLToolsURL(cls):
+        # MGLTools 1.5.6 Linux x86_64 tarball
+        return 'https://ccsb.scripps.edu/download/548/'
 
     @classmethod
     def getDeepFragGithub(cls):

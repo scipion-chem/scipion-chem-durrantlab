@@ -34,7 +34,6 @@ from pyworkflow.utils.path import makePath
 
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
 from pwchem.utils import runOpenBabel, calculate_centerMass, getBaseName
-from pwchem.constants import MGL_DIC
 
 from durrantlab import Plugin
 from durrantlab import AGROW_DIC
@@ -459,7 +458,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         return oFile
 
     def getConversionArgs(self):
-        mglPath = Plugin.getProgramHome(MGL_DIC)
+        mglPath = Plugin.getProgramHome(AGROW_DIC, 'mgltools')
         if os.path.exists(mglPath):
             args = ' --conversion_choice MGLToolsConversion --mgltools_directory {}'.format(mglPath)
         else:
