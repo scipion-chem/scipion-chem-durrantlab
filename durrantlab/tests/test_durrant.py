@@ -93,10 +93,11 @@ class TestDeepFrag(TestExtractLigand):
 
     @classmethod
     def _runDeepFrag(cls, inProt):
+        ligName = str(next(iter(inProt.outputSmallMolecules)))
         protGyp = cls.newProtocol(
             ProtChemDeepFrag,
-            inputLigand='SmallMolecule (g1_4erf_0R3-1_1 molecule)', topK=10,
-            ligandList='{"Ligand": "SmallMolecule (g1_4erf_0R3-1_1 molecule)", "ConnectionPoint": "C23"}'
+            inputLigand=ligName, topK=10,
+            ligandList='{"Ligand": "%s", "ConnectionPoint": "C23"}' % ligName
         )
         protGyp.inputSmallMolecules.set(inProt)
         protGyp.inputSmallMolecules.setExtended('outputSmallMolecules')
@@ -105,7 +106,7 @@ class TestDeepFrag(TestExtractLigand):
         return protGyp
 
     def test(self):
-        protExtract = self._runExtractLigand(self.protImportPDB)
+        protExtract = self._runExtractLigand(self.protImportPDB, '{"model": 0, "chain": "A", "residues": 92}')
         self._waitOutput(protExtract, 'outputSmallMolecules')
 
         protDeepFrag = self._runDeepFrag(inProt=protExtract)

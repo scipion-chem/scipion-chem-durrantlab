@@ -27,6 +27,7 @@
 import os, subprocess
 
 import pwchem
+from scipion.install.funcs import InstallHelper
 
 from .constants import *
 
@@ -46,55 +47,68 @@ class Plugin(pwchem.Plugin):
 
     @classmethod
     def defineBinaries(cls, env):
-        cls.addMGLToolsPackage(env, default=bool(cls.getCondaActivationCmd()))
         cls.addAutoGrowPackage(env, default=bool(cls.getCondaActivationCmd()))
         cls.addDeepFragPackage(env, default=bool(cls.getCondaActivationCmd()))
 
     @classmethod
     def addDeepFragPackage(cls, env, default=False):
-        DFRAG_INSTALLED = 'deepFrag_installed'
-        dFragCommands = 'git clone {} && cd deepfrag && '.format(cls.getDeepFragGithub())
-        dFragCommands += 'conda create -y -n {} -c fastai -c conda-forge --file requirements.txt prody=1.11 rdkit && '\
-            .format(cls.getEnvName(DFRAG_DIC))
-        dFragCommands += '{} && pip install pyparsing==2.4.7 torch && '.format(cls.getEnvActivationCommand(DFRAG_DIC))
-        dFragCommands += "mkdir .store && wget {} -P .store && wget {} -O DFModel.zip && " \
-                         "unzip DFModel.zip -d .store/model && ".\
-            format(cls.getDeepFragFingerprints(), cls.getDeepFragModel())
-        dFragCommands += 'touch ../{}'.format(DFRAG_INSTALLED)
-        dFragCommands = [(dFragCommands, DFRAG_INSTALLED)]
+        installer = InstallHelper(DFRAG_DIC['name'], packageHome=cls.getVar(DFRAG_DIC['home']),
+                                  packageVersion=DFRAG_DIC['version'])
 
-        env.addPackage(DFRAG_DIC['name'], version=DFRAG_DIC['version'],
-                       tar='void.tgz', commands=dFragCommands, default=default)
+        envName = cls.getEnvName(DFRAG_DIC)
+        envActivation = cls.getEnvActivationCommand(DFRAG_DIC)
+
+        # Only the inference deps: deepfrag's requirements.txt is a 2020 training freeze that takes hours to solve
+        installer.addCommand(
+            f'git clone {cls.getDeepFragGithub()} && '
+            f'conda create -y -n {envName} --override-channels -c conda-forge '
+            f'python=3.11 "numpy<2" h5py numba=0.61 rdkit=2023.09 prody tqdm requests',
+            'DEEPFRAG_ENV_CREATED'
+        ).addCommand(
+            # numba's built-in CUDA fails on CUDA 13 drivers: use numba-cuda with its ctypes driver binding
+            f'{envActivation} && pip install torch==2.6.0 "numba-cuda[cu12]==0.15.2" && '
+            f'conda env config vars set NUMBA_CUDA_USE_NVIDIA_BINDING=0',
+            'DEEPFRAG_DEPS_INSTALLED'
+        ).addCommand(
+            f'cd deepfrag && '
+            f'mkdir -p .store && '
+            f'wget {cls.getDeepFragFingerprints()} -P .store && '
+            f'wget {cls.getDeepFragModel()} -O DFModel.zip && '
+            f'unzip DFModel.zip -d .store/model && '
+            f'rm DFModel.zip',
+            'DEEPFRAG_MODELS_DOWNLOADED'
+        ).addPackage(env, dependencies=['conda'], default=default)
 
     @classmethod
     def addAutoGrowPackage(cls, env, default=False):
-        AGROW_INSTALLED = 'autogrow_installed'
-        agrowCommands = 'conda create -y -n {} -c rdkit rdkit=2020.09 python=3.7 && '.format(cls.getEnvName(AGROW_DIC))
-        agrowCommands += '{} && '.format(cls.getEnvActivationCommand(AGROW_DIC))
-        agrowCommands += 'conda install -y numpy=1.21 scipy=1.7 matplotlib=3.5 func_timeout=4.3 && '
-        agrowCommands += 'conda install -y -c openbabel openbabel=2.4 && '
-        agrowCommands += 'git clone {} && '.format(cls.getAutoGrowGithub())
-        agrowCommands += 'touch {}'.format(AGROW_INSTALLED)
-        agrowCommands = [(agrowCommands, AGROW_INSTALLED)]
+        installer = InstallHelper(AGROW_DIC['name'], packageHome=cls.getVar(AGROW_DIC['home']),
+                                  packageVersion=AGROW_DIC['version'])
 
-        env.addPackage(AGROW_DIC['name'], version=AGROW_DIC['version'],
-                       tar='void.tgz', commands=agrowCommands, default=default)
+        envName = cls.getEnvName(AGROW_DIC)
+        envActivation = cls.getEnvActivationCommand(AGROW_DIC)
 
-    @classmethod
-    def addMGLToolsPackage(cls, env, default=False):
-        MGL_INSTALLED = "initMGLtools.sh"
-        mgl_commands = 'wget {} -O {} --no-check-certificate && '. \
-            format(cls.getMGLToolsURL(), cls.getDefTar(MGL_DIC))
-        mgl_commands += 'tar -xf {} --strip-components 1 && rm {} &&'.format(*[cls.getDefTar(MGL_DIC)] * 2)
-        mgl_commands += 'cp install.sh install.bash && sed -i "s/bin\/sh/bin\/bash/g" install.bash && '
-        mgl_commands += '{} && '.format(cls.getDefPath(MGL_DIC, 'install.bash'))
-        mgl_commands += 'touch ' + MGL_INSTALLED
-        mgl_commands = [(mgl_commands, MGL_INSTALLED)]
-
-        env.addPackage(MGL_DIC['name'], version=MGL_DIC['version'],
-                       tar='void.tgz',
-                       commands=mgl_commands,
-                       default=True)
+        installer.addCommand(
+            f'conda create -y -n {envName} -c rdkit rdkit=2020.09 python=3.7',
+            'AUTOGROW_ENV_CREATED'
+        ).addCommand(
+            f'{envActivation} && '
+            f'conda install -y numpy=1.21 scipy=1.7 matplotlib=3.5 func_timeout=4.3 && '
+            f'conda install -y -c openbabel openbabel=2.4',
+            'AUTOGROW_DEPS_INSTALLED'
+        ).addCommand(
+            f'wget {cls.getAutoGrowUrl()} -O autogrow4.zip && '
+            f'unzip autogrow4.zip && '
+            f'mv autogrow4-{AGROW_DIC["version"]} autogrow4 && '
+            f'rm autogrow4.zip',
+            'AUTOGROW_DOWNLOADED'
+        ).addCommand(
+            # AutoGrow4's own MGLTools 1.5.6 (binary, no conda): 1.5.7's prepare_ligand4.py breaks AutoGrow4
+            f'mkdir -p mgltools && cd mgltools && '
+            f'wget {cls.getMGLToolsURL()} -O mgltools.tgz --no-check-certificate && '
+            f'tar -xf mgltools.tgz --strip-components 1 && rm mgltools.tgz && '
+            f'cp install.sh install.bash && sed -i "1s|/bin/sh|/bin/bash|" install.bash && ./install.bash',
+            'AUTOGROW_MGLTOOLS_INSTALLED'
+        ).addPackage(env, dependencies=['conda', 'wget', 'tar'], default=default)
 
     # ---------------------------------- Utils functions  -----------------------
     @classmethod
@@ -104,8 +118,13 @@ class Plugin(pwchem.Plugin):
         return os.path.join(fnDir, path)
 
     @classmethod
-    def getAutoGrowGithub(cls):
-      return 'https://github.com/durrantlab/autogrow4.git'
+    def getAutoGrowUrl(cls):
+        return f'https://github.com/durrantlab/autogrow4/archive/refs/tags/v{AGROW_DIC["version"]}.zip'
+
+    @classmethod
+    def getMGLToolsURL(cls):
+        # MGLTools 1.5.6 Linux x86_64 tarball
+        return 'https://ccsb.scripps.edu/download/548/'
 
     @classmethod
     def getDeepFragGithub(cls):
@@ -118,8 +137,3 @@ class Plugin(pwchem.Plugin):
     @classmethod
     def getDeepFragModel(cls):
         return 'https://durrantlab.pitt.edu/apps/deepfrag/files/final_model_v2.zip'
-
-    @classmethod
-    def getMGLToolsURL(cls):
-        return 'https://ccsb.scripps.edu/download/548/'
-

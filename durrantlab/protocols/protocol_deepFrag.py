@@ -29,6 +29,7 @@ import os, shutil, json
 from pwem.protocols import EMProtocol
 from pyworkflow.protocol.params import PointerParam, IntParam, TextParam, STEPS_PARALLEL, LabelParam, \
   LEVEL_ADVANCED, StringParam, EnumParam
+from pyworkflow.protocol import params
 import pyworkflow.object as pwobj
 from pyworkflow.utils.path import makePath
 
@@ -52,6 +53,13 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
         self.stepsExecutionMode = STEPS_PARALLEL
 
     def _defineParams(self, form):
+        form.addHidden(params.USE_GPU, params.BooleanParam, default=True,
+                       label="Use GPU for execution: ",
+                       help="This protocol has both CPU and GPU implementation.\
+                                                                 Select the one you want to use.")
+        form.addHidden(params.GPU_LIST, params.StringParam, default='0', label="Choose GPU IDs",
+                       help="Add a list of GPU devices that can be used")
+
         form.addSection(label='Input')
         inGroup = form.addGroup('Input')
         inGroup.addParam('inputSmallMolecules', PointerParam, pointerClass="SetOfSmallMolecules",
@@ -89,21 +97,21 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
         form.addParallelSection(threads=4, mpi=1)
 
     def _insertAllSteps(self):
-      cId = self._insertFunctionStep('convertStep', prerequisites=[])
+      cId = self._insertFunctionStep(self.convertStep, prerequisites=[])
 
       dockSteps = []
       for it, ligandStr in enumerate(self.ligandList.get().split('\n')):
           if ligandStr.strip():
-              dockId = self._insertFunctionStep('dFragStep', ligandStr, prerequisites=[cId])
+              dockId = self._insertFunctionStep(self.dFragStep, ligandStr, prerequisites=[cId])
               dockSteps.append(dockId)
 
-      self._insertFunctionStep('createOutputStep', prerequisites=dockSteps)
+      self._insertFunctionStep(self.createOutputStep, prerequisites=dockSteps)
 
     def convertStep(self):
         receptorFile = self.getOriginalReceptorFile()
         if receptorFile.endswith('.pdb'):
           shutil.copy(receptorFile, self.getReceptorPDB())
-        elif receptorFile.endswith('.pdbqt'):
+        else:
           self.convertReceptor2PDB(receptorFile)
 
         oDir = self.getInputLigandsPath()
@@ -114,9 +122,13 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
         for molFile in allMols:
             inName, inExt = os.path.splitext(os.path.basename(molFile))
             oFile = os.path.join(oDir, inName + '.pdb')
-
-            args = ' -i{} {} -opdb -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
-            runOpenBabel(protocol=self, args=args, cwd=oDir)
+            # Reuse the relabeled PDB if the wizard already produced one
+            tmpPdbPath = self.getMolTmpPDBPath(molFile)
+            if os.path.exists(tmpPdbPath):
+                shutil.copy(tmpPdbPath, oFile)
+            else:
+                args = ' -i{} {} -opdb -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
+                runOpenBabel(protocol=self, args=args, cwd=oDir)
 
     def dFragStep(self, ligStr):
         '''Executes AutoGrow to dock and generate ligand variants to look for the best hits'''
@@ -132,6 +144,11 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
         if 'RemovalPoint' in ligDic:
           args += ' --rname {}'.format(ligDic['RemovalPoint'])
         args += ' --num_grids {} --top_k {}'.format(self.nGrids.get(), self.topK.get())
+
+        if self.useGpu.get():
+            os.environ["CUDA_VISIBLE_DEVICES"] = self.gpuList.get()
+        else:
+            args += ' --cpu'
 
         Plugin.runScript(self, 'deepfrag.py', args, env=DFRAG_DIC, cwd=self._getExtraPath(),
                          scriptDir=Plugin.getProgramHome(DFRAG_DIC, path='deepfrag'))
@@ -159,6 +176,11 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
     ################################################
     def getOriginalReceptorFile(self):
       return self.inputSmallMolecules.get().getProteinFile()
+
+    def getMolTmpPDBPath(self, molFile):
+        '''Project tem path for the relabeled ligand PDB produced by the view wizard'''
+        base = os.path.splitext(os.path.basename(molFile))[0]
+        return os.path.abspath(self.getProject().getTmpPath('{}.pdb'.format(base)))
 
     def parseLigandLine(self, ligandLine):
       return json.loads(ligandLine)
@@ -211,11 +233,12 @@ class ProtChemDeepFrag(ProtChemAutoGrow4):
                            scriptDir=Plugin.getProgramHome(AGROW_DIC, path=dirPath))
 
           for convMol in os.listdir(oDir):
-            if convMol.endswith('.pdb') and basename in convMol:
-              molName, i = convMol.split('__')[0], int(convMol.split('_')[-5])
-              oFile = os.path.join(oDir, molName+'.pdb')
-              os.rename(os.path.join(oDir, convMol), oFile)
-              molDic[iDic[i]] = [oFile, smiDic[iDic[i]]]
+              if convMol.endswith('.pdb') and basename and convMol.startswith(basename):
+                  suffix = convMol[len(basename):]
+                  i = int(suffix.lstrip('_').split('_')[0])
+                  oFile = os.path.join(oDir, '{}_{}.pdb'.format(basename, i))
+                  os.rename(os.path.join(oDir, convMol), oFile)
+                  molDic[iDic[i]] = [oFile, smiDic[iDic[i]]]
 
         else:
           convScript = 'obabel_IO.py' if conv == OBABEL else 'rdkit_IO.py'

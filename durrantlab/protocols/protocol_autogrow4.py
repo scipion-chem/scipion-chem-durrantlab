@@ -246,7 +246,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         receptorFile = self.getOriginalReceptorFile()
         if receptorFile.endswith('.pdb'):
           shutil.copy(receptorFile, self.getReceptorPDB())
-        elif receptorFile.endswith('.pdbqt'):
+        elif receptorFile.endswith(('.pdbqt','.cif')):
           self.convertReceptor2PDB(receptorFile)
 
     def dockStep(self, pocket=None):
@@ -405,14 +405,29 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         oDir = self.getInputLigandsPath()
         if not os.path.exists(oDir):
             os.mkdir(oDir)
+
         if self.ligandsSource.get() == 1:
-          allMols = self.getLigandsFileNames()
-          runOpenBabel(self, '{} -O {}'.format(' '.join(allMols), self.getInputSMIFile()),
-                       popen=True)
+            allMols = self.getLigandsFileNames()
+            inputSMIFile = self.getInputSMIFile()
+
+            open(inputSMIFile, 'w').close()  # start empty: batches are appended
+
+            batchSize = 300
+            for i in range(0, len(allMols), batchSize):
+                batch = allMols[i:i + batchSize]
+                tmpOutput = "{}_batch_{}.smi".format(inputSMIFile, i)
+
+                runOpenBabel(self, '{} -O {}'.format(' '.join(batch), tmpOutput),
+                             popen=True)
+
+                if os.path.exists(tmpOutput):
+                    with open(inputSMIFile, 'a') as mainF, open(tmpOutput) as tmpF:
+                        mainF.write(tmpF.read())
+                    os.remove(tmpOutput)
         else:
-          inSMIFile = Plugin.getProgramHome(AGROW_DIC, path='autogrow4/source_compounds/{}'.
-                                                    format(zincDic[self.getEnumText('inputAGrowMols')]))
-          shutil.copy(inSMIFile, self.getInputSMIFile())
+            inSMIFile = Plugin.getProgramHome(AGROW_DIC, path='autogrow4/source_compounds/{}'.
+                                              format(zincDic[self.getEnumText('inputAGrowMols')]))
+            shutil.copy(inSMIFile, self.getInputSMIFile())
 
     def getOriginalReceptorFile(self):
         if self.fromReceptor.get() == 0:
@@ -443,7 +458,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
         return oFile
 
     def getConversionArgs(self):
-        mglPath = Plugin.getDefPath({'name': 'mgltools', 'version': '1.5.6'})
+        mglPath = Plugin.getProgramHome(AGROW_DIC, 'mgltools')
         if os.path.exists(mglPath):
             args = ' --conversion_choice MGLToolsConversion --mgltools_directory {}'.format(mglPath)
         else:
@@ -472,11 +487,8 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
 
     def _validate(self):
       vals = []
-      if self.getEnumText('scoreChoice') != 'VINA':
-        mglPath = Plugin.getDefPath({'name': 'mgltools', 'version': '1.5.6'})
-        if self.getEnumText('dockChoice') != 'VinaDocking' or not os.path.exists(mglPath):
-          vals.append('In order to use NN1 or NN2 scoring functions, Vina docking must be selected and conversions '
-                      'must be performed using MGLTools 1.5.6')
+      if self.getEnumText('scoreChoice') != 'VINA' and self.getEnumText('dockChoice') != 'VinaDocking':
+          vals.append('In order to use NN1 or NN2 scoring functions, Vina docking must be selected')
       return vals
 
     def _warnings(self):
