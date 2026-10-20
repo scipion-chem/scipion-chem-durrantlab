@@ -45,7 +45,93 @@ from durrantlab.protocols import ProtChemAutoGrow4
 NONE, GYPSUM, OBABEL, RDKIT = 0, 1, 2, 3
 
 class ProtChemDeepFrag(ProtChemAutoGrow4):
-    """DeepFrag lead optimization"""
+    """
+    AI Generated:
+
+This protocol runs DeepFrag, a deep convolutional neural network that suggests
+fragments to grow a docked ligand from a chosen atom, based on the 3D
+environment of the receptor pocket.
+
+The suggested molecules are returned as a SetOfSmallMolecules with their
+DeepFrag score, so they can be prepared, docked and compared with the
+starting ligand.
+
+Overview
+--------
+The protocol takes a docked SetOfSmallMolecules (the receptor is taken from
+the set) and a list of ligand / connection point pairs:
+
+- Connection point: atom of the ligand where DeepFrag adds a fragment
+- Removal point (optional): atom whose fragment is removed first, so that
+  DeepFrag proposes a replacement for it
+
+The list is built with the wizards: select the ligand, view it in PyMOL with
+its atom names, pick the connection (and removal) atom and add the pair to
+the list. Each line of the list is processed independently and in parallel.
+
+Fragment Prediction
+-------------------
+For each ligand / connection point:
+
+- The receptor and the ligand around the connection point are voxelized
+- The network predicts the fingerprint of the ideal fragment for that
+  environment, averaging over several grid rotations
+- The fragments of the DeepFrag library are ranked by similarity to that
+  fingerprint, and the best ones are attached to the ligand
+
+The number of rotations makes the prediction more stable, and the number of
+predictions sets how many molecules are returned per pair. DeepFrag runs on
+the GPU when enabled, or on the CPU otherwise.
+
+3D Conversion
+-------------
+DeepFrag returns the full molecules as SMILES. They can be kept as SMILES, or
+converted to 3D PDB models with Gypsum-DL (one variant per molecule),
+OpenBabel or RDKit.
+
+Workflow
+--------
+1. Convert the receptor and the listed ligands to PDB (reusing the relabeled
+   ligand PDB from the view wizard, so that atom names match)
+2. Run DeepFrag for every ligand / connection point
+3. Read the predicted molecules and their scores
+4. Convert them to 3D with the selected software
+5. Register them as SmallMolecules of the output set
+
+Output
+------
+- outputSmallMolecules:
+    One SmallMolecule per suggested molecule, with:
+
+    - _score:
+        DeepFrag score of the suggested fragment. Higher values indicate
+        a better fit to the pocket environment.
+    - molClass:
+        "Deepfrag".
+
+Key Features
+------------
+- Structure-based fragment growing and replacement with deep learning
+- Interactive selection of the connection and removal atoms
+- Several ligands and growing points in one run, in parallel
+- GPU or CPU execution
+- SMILES or 3D output (Gypsum-DL, OpenBabel or RDKit)
+
+Use Cases
+---------
+- Optimizing a docked hit by growing it towards unexplored pocket regions
+- Replacing a fragment of a ligand by alternatives better suited to the pocket
+- Generating focused analogue libraries for a known binding mode
+
+Notes
+-----
+- The input molecules must be docked: DeepFrag needs the ligand pose in the
+  receptor
+- The suggested molecules are not posed in the pocket: their 3D models are
+  built from scratch, so they must be docked to compare them with the
+  starting ligand
+- Atom names must be unique in the ligand: use the view wizard to check them
+"""
     _label = 'DeepFrag lead optimization'
 
     def __init__(self, **kwargs):
