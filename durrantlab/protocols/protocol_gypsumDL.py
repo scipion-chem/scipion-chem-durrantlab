@@ -24,7 +24,7 @@
 # *
 # **************************************************************************
 
-import os, shutil
+import os, re, shutil
 
 from pwem.protocols import EMProtocol
 from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, STEPS_PARALLEL, BooleanParam, \
@@ -223,7 +223,6 @@ Notes
       self._defineSourceRelation(self.inputSmallMolecules, outputSet)
 
     ################################################
-    # todo: tests
     def getInputLigandsPath(self, path=''):
         return os.path.abspath(self._getExtraPath('inputLigands', path))
 
@@ -245,9 +244,37 @@ Notes
       if not os.path.exists(oDir):
         os.mkdir(oDir)
 
-      allMols = self.getLigandsFileNames()
-      runOpenBabel(self, '{} -O {}'.format(' '.join(allMols), self.getInputSMIFile()),
-                   popen=True)
+      self.writeInputSMIFile(self.getLigandsFileNames(), self.getInputSMIFile())
+
+    def writeInputSMIFile(self, molFiles, smiFile, batchSize=300):
+      '''Writes the molecules to a SMILES file with the largest fragment of each one (salts and solvents removed)
+      and a safe name. OpenBabel names can be file paths (PDB inputs) or SDF fields spanning several lines, which
+      break the Gypsum-DL / AutoGrow4 file handling'''
+      usedNames = set()
+      with open(smiFile, 'w') as f:
+        for i in range(0, len(molFiles), batchSize):
+          batch = molFiles[i:i + batchSize]
+          tmpFile = '{}_batch_{}.smi'.format(smiFile, i)
+          runOpenBabel(self, '{} -osmi -r -xn -O {}'.format(' '.join(batch), tmpFile), popen=True)
+          smis = []
+          if os.path.exists(tmpFile):
+            with open(tmpFile) as tf:
+              smis = [line.split()[0] for line in tf if line.strip()]
+            os.remove(tmpFile)
+
+          # Each SMILES is named after its file, unless some file held several molecules
+          if len(smis) == len(batch):
+            names = [re.sub(r'[^A-Za-z0-9-]', '-', os.path.splitext(os.path.basename(fn))[0]) for fn in batch]
+          else:
+            names = ['mol{}'.format(i + j + 1) for j in range(len(smis))]
+
+          for smi, name in zip(smis, names):
+            uniqueName, k = name, 1
+            while uniqueName in usedNames:
+              k += 1
+              uniqueName = '{}-{}'.format(name, k)
+            usedNames.add(uniqueName)
+            f.write('{}\t{}\n'.format(smi, uniqueName))
 
     def getBoolArgs(self):
       args = ''

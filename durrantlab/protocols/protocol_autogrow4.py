@@ -513,23 +513,7 @@ Notes
             os.mkdir(oDir)
 
         if self.ligandsSource.get() == 1:
-            allMols = self.getLigandsFileNames()
-            inputSMIFile = self.getInputSMIFile()
-
-            open(inputSMIFile, 'w').close()  # start empty: batches are appended
-
-            batchSize = 300
-            for i in range(0, len(allMols), batchSize):
-                batch = allMols[i:i + batchSize]
-                tmpOutput = "{}_batch_{}.smi".format(inputSMIFile, i)
-
-                runOpenBabel(self, '{} -O {}'.format(' '.join(batch), tmpOutput),
-                             popen=True)
-
-                if os.path.exists(tmpOutput):
-                    with open(inputSMIFile, 'a') as mainF, open(tmpOutput) as tmpF:
-                        mainF.write(tmpF.read())
-                    os.remove(tmpOutput)
+            self.writeInputSMIFile(self.getLigandsFileNames(), self.getInputSMIFile())
         else:
             inSMIFile = Plugin.getProgramHome(AGROW_DIC, path='autogrow4/source_compounds/{}'.
                                               format(zincDic[self.getEnumText('inputAGrowMols')]))
