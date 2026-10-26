@@ -34,7 +34,7 @@ import pyworkflow.object as pwobj
 from pyworkflow.utils.path import makePath
 
 from pwchem.objects import SetOfSmallMolecules, SmallMolecule
-from pwchem.utils import runOpenBabel
+from pwchem.utils import runOpenBabel, relabelAtomsPDB
 from pwchem import Plugin as pwchemPlugin
 from pwchem.constants import OPENBABEL_DIC, RDKIT_DIC
 
@@ -215,6 +215,8 @@ Notes
             else:
                 args = ' -i{} {} -opdb -O {}'.format(inExt[1:], os.path.abspath(molFile), oFile)
                 runOpenBabel(protocol=self, args=args, cwd=oDir)
+                # DeepFrag looks the connection point up by atom name, so it must match the names of the wizard
+                relabelAtomsPDB(oFile)
 
     def dFragStep(self, ligStr):
         '''Executes AutoGrow to dock and generate ligand variants to look for the best hits'''
