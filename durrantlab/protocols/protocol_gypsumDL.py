@@ -24,7 +24,7 @@
 # *
 # **************************************************************************
 
-import os, shutil
+import os, re, shutil
 
 from pwem.protocols import EMProtocol
 from pyworkflow.protocol.params import PointerParam, IntParam, FloatParam, STEPS_PARALLEL, BooleanParam, \
@@ -44,7 +44,85 @@ argsSkipDic = {'skip_optimize_geometry': 'optGeo', 'skip_alternate_ring_conforma
 argsBoolDic = {'let_tautomers_change_chirality': 'chirChang', 'use_durrant_lab_filters': 'durrFilter'}
 
 class ProtChemGypsumDL(EMProtocol):
-    """Protocol to execute Gypsum-DL for ligand preparation"""
+    """
+    AI Generated:
+
+This protocol prepares small molecules with Gypsum-DL: it enumerates their
+probable ionization states, tautomers, stereoisomers and ring conformations,
+and generates 3D models for each variant.
+
+The variants are returned as a new SetOfSmallMolecules ready to be docked or
+used by other virtual screening protocols.
+
+Overview
+--------
+The protocol takes a SetOfSmallMolecules in any format OpenBabel can read.
+All the molecules are converted with OpenBabel into a single SMILES file,
+which is the input of Gypsum-DL. Gypsum-DL is run from the copy bundled with
+AutoGrow4, inside the AutoGrow4 conda environment.
+
+Since the input is converted to SMILES, its original 3D coordinates are not
+used: Gypsum-DL builds new 3D models from scratch.
+
+Variant Enumeration
+-------------------
+For each input molecule, Gypsum-DL can:
+
+- Protonate it for the selected pH range (pH 6.4 - 8.4 by default, in steps
+  defined by the pKa precision)
+- Enumerate its tautomers
+- Enumerate unspecified chiral centers and double bonds
+- Generate alternative non-aromatic ring conformations
+- Optimize the geometry of each 3D model
+
+Each of these operations can be switched off. Optionally, tautomers that
+change the number of chiral centers can be allowed, and the Durrant lab
+substructure filters can remove variants judged improbable.
+
+The number of variants kept per molecule (5 by default) and the
+exhaustiveness of the conformer search (3 by default) control the size of
+the output and the run time.
+
+Workflow
+--------
+1. Convert all the input molecules to a single SMILES file (OpenBabel)
+2. Run Gypsum-DL on it, using the protocol threads as processors
+3. Rename each output PDB as <molName>-<n>.pdb
+4. Register each variant as a SmallMolecule of the output set
+
+Output
+------
+- outputSmallMolecules:
+    One SmallMolecule per generated variant, in PDB format, with:
+
+    - molName:
+        Name of the input molecule the variant comes from.
+    - confId:
+        Index of the variant for that molecule (1, 2, ...).
+    - type:
+        "GypsumDL".
+
+Key Features
+------------
+- Protonation, tautomer, stereoisomer and ring conformer enumeration in one
+  step
+- Configurable pH range and pKa precision
+- Optional Durrant lab filters for improbable variants
+- Parallel execution over the protocol threads
+
+Use Cases
+---------
+- Preparing ligand libraries before docking
+- Exploring the protonation and tautomeric states of a hit
+- Generating 3D models for molecules only available as SMILES
+
+Notes
+-----
+- The molecule name is taken from the text before the first "_" of the
+  Gypsum-DL output file, so input names containing "_" are merged together
+- Gypsum-DL runs in the AutoGrow4 environment, so AutoGrow4 must be
+  installed
+"""
     _label = 'Gypsum ligand preparation'
 
     def __init__(self, **kwargs):
@@ -145,7 +223,6 @@ class ProtChemGypsumDL(EMProtocol):
       self._defineSourceRelation(self.inputSmallMolecules, outputSet)
 
     ################################################
-    # todo: tests
     def getInputLigandsPath(self, path=''):
         return os.path.abspath(self._getExtraPath('inputLigands', path))
 
@@ -167,9 +244,37 @@ class ProtChemGypsumDL(EMProtocol):
       if not os.path.exists(oDir):
         os.mkdir(oDir)
 
-      allMols = self.getLigandsFileNames()
-      runOpenBabel(self, '{} -O {}'.format(' '.join(allMols), self.getInputSMIFile()),
-                   popen=True)
+      self.writeInputSMIFile(self.getLigandsFileNames(), self.getInputSMIFile())
+
+    def writeInputSMIFile(self, molFiles, smiFile, batchSize=300):
+      '''Writes the molecules to a SMILES file with the largest fragment of each one (salts and solvents removed)
+      and a safe name. OpenBabel names can be file paths (PDB inputs) or SDF fields spanning several lines, which
+      break the Gypsum-DL / AutoGrow4 file handling'''
+      usedNames = set()
+      with open(smiFile, 'w') as f:
+        for i in range(0, len(molFiles), batchSize):
+          batch = molFiles[i:i + batchSize]
+          tmpFile = '{}_batch_{}.smi'.format(smiFile, i)
+          runOpenBabel(self, '{} -osmi -r -xn -O {}'.format(' '.join(batch), tmpFile), popen=True)
+          smis = []
+          if os.path.exists(tmpFile):
+            with open(tmpFile) as tf:
+              smis = [line.split()[0] for line in tf if line.strip()]
+            os.remove(tmpFile)
+
+          # Each SMILES is named after its file, unless some file held several molecules
+          if len(smis) == len(batch):
+            names = [re.sub(r'[^A-Za-z0-9-]', '-', os.path.splitext(os.path.basename(fn))[0]) for fn in batch]
+          else:
+            names = ['mol{}'.format(i + j + 1) for j in range(len(smis))]
+
+          for smi, name in zip(smis, names):
+            uniqueName, k = name, 1
+            while uniqueName in usedNames:
+              k += 1
+              uniqueName = '{}-{}'.format(name, k)
+            usedNames.add(uniqueName)
+            f.write('{}\t{}\n'.format(smi, uniqueName))
 
     def getBoolArgs(self):
       args = ''
