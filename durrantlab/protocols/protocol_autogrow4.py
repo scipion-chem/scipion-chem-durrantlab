@@ -64,7 +64,113 @@ zincDic = {'ZINC MW <= 100 Da': 'Fragment_MW_up_to_100.smi',
                'PARPi_BRICS_frags': 'PARPi_BRICS_frags.smi'}
 
 class ProtChemAutoGrow4(ProtChemGypsumDL):
-    """AutoGrow for docking and lead optimization"""
+    """
+    AI Generated:
+
+This protocol runs AutoGrow4, a genetic algorithm that evolves a population of
+small molecules over several generations, docking each new molecule into the
+receptor and keeping the best binders to seed the next generation.
+
+The docked poses of the evolved molecules are returned as a SetOfSmallMolecules,
+so they can be analysed, rescored or used by consensus protocols.
+
+Overview
+--------
+The protocol takes a receptor and a set of source compounds:
+
+- Receptor: a whole AtomStruct, or a SetOfStructROIs (pockets). With
+  pockets, AutoGrow4 is run once per pocket, in parallel, and the protocol
+  threads are split among them.
+- Source compounds: one of the AutoGrow4 libraries (ZINC fragments grouped
+  by molecular weight, naphthalene, PARPi or PARPi BRICS fragments), or a
+  user SetOfSmallMolecules converted to SMILES with OpenBabel.
+
+Ligands are prepared with Gypsum-DL (bundled with AutoGrow4) before docking.
+
+Genetic Algorithm
+-----------------
+Each generation is built from the best molecules of the previous one by:
+
+- Mutation: in silico reactions from the selected library (click chemistry,
+  robust or all reactions)
+- Crossover: SmilesMerge combines two parents sharing a maximum common
+  substructure of at least the selected number of atoms
+- Elitism: the best molecules advance unchanged
+
+Parents are chosen with a roulette, rank or tournament selector. Every new
+molecule is docked and scored, and the best ones seed the next generation.
+
+Docking and Scoring
+-------------------
+- Docking: AutoDock Vina or QuickVina2 (default), with a configurable
+  exhaustiveness and number of binding modes
+- Scoring: Vina affinity (default), or the NN1 / NN2 neural network
+  rescoring (which require Vina docking)
+- Grid box: centered on the receptor center of mass with the given size
+  (whole protein), or on each pocket center with a size of
+  pocket radius * factor (pockets)
+
+Filters
+-------
+Molecules can be filtered by drug-likeness and lead-likeness rules: Lipinski
+(strict or lenient), Ghose (regular or modified), Mozziconacci,
+VandeWaterbeemd, PAINS, NIH and BRENK. The filters can also be applied to the
+source compounds.
+
+File Handling
+-------------
+- The receptor is used as PDB: CIF and PDBQT receptors are converted with
+  OpenBabel
+- Receptor and ligands are converted to PDBQT with MGLTools 1.5.6, installed
+  inside the AutoGrow4 folder (MGLTools 1.5.7 cannot be used: its
+  prepare_ligand4.py fails with the paths AutoGrow4 passes)
+- The AutoGrow4 output of each generation is compressed after parsing
+
+Workflow
+--------
+1. Convert the source compounds to a SMILES file and the receptor to PDB
+2. Run AutoGrow4 on the whole protein, or once per pocket
+3. Read the docked poses of every generation from the minimum one on
+4. Keep the poses with a Vina energy below the threshold
+5. Register them as SmallMolecules of the output set
+
+Output
+------
+- outputSmallMolecules:
+    A docked SetOfSmallMolecules (PDBQT poses) linked to the receptor, where
+    each molecule contains:
+
+    - _energy:
+        Vina docking energy of the pose. Lower values indicate better
+        predicted binding.
+    - poseId:
+        Docking mode of the pose.
+    - gridId:
+        Pocket the pose was docked in.
+    - molClass:
+        "AutoGrow4".
+
+Key Features
+------------
+- De novo design and lead optimization by a docking-driven genetic algorithm
+- Built-in fragment libraries or user compounds as starting point
+- Vina or QuickVina2 docking with optional neural network rescoring
+- Drug-likeness and PAINS filters
+- Parallel runs over several pockets
+
+Use Cases
+---------
+- Growing fragments or hits into larger, better binders
+- Exploring chemical space around a known scaffold for a given pocket
+- Generating new candidates for a target without known ligands
+
+Notes
+-----
+- AutoGrow4 is computationally heavy: whole proteins or many pockets lead to
+  very long runs
+- The default maximum energy (0) keeps only poses with negative energies
+- Only generations from the minimum output generation on are collected
+"""
     _label = 'AutoGrow4 docking and lead optimization'
 
     def __init__(self, **kwargs):
@@ -407,23 +513,7 @@ class ProtChemAutoGrow4(ProtChemGypsumDL):
             os.mkdir(oDir)
 
         if self.ligandsSource.get() == 1:
-            allMols = self.getLigandsFileNames()
-            inputSMIFile = self.getInputSMIFile()
-
-            open(inputSMIFile, 'w').close()  # start empty: batches are appended
-
-            batchSize = 300
-            for i in range(0, len(allMols), batchSize):
-                batch = allMols[i:i + batchSize]
-                tmpOutput = "{}_batch_{}.smi".format(inputSMIFile, i)
-
-                runOpenBabel(self, '{} -O {}'.format(' '.join(batch), tmpOutput),
-                             popen=True)
-
-                if os.path.exists(tmpOutput):
-                    with open(inputSMIFile, 'a') as mainF, open(tmpOutput) as tmpF:
-                        mainF.write(tmpF.read())
-                    os.remove(tmpOutput)
+            self.writeInputSMIFile(self.getLigandsFileNames(), self.getInputSMIFile())
         else:
             inSMIFile = Plugin.getProgramHome(AGROW_DIC, path='autogrow4/source_compounds/{}'.
                                               format(zincDic[self.getEnumText('inputAGrowMols')]))

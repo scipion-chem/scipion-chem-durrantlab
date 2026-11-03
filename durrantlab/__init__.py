@@ -102,6 +102,13 @@ class Plugin(pwchem.Plugin):
             f'rm autogrow4.zip',
             'AUTOGROW_DOWNLOADED'
         ).addCommand(
+            # AutoGrow4 4.0.3 bug (fixed only in unreleased master): the roulette selector weights the docking
+            # seeds by the diversity score (x[-1]) instead of the docking score (x[-2]). Fails if the line changes
+            "f=autogrow4/autogrow/docking/ranking/selecting/roulette_selection.py && "
+            "sed -i '/docking_or_diversity == \"docking\"/{n;s/float(x\\[-1\\])/float(x[-2])/}' $f && "
+            "grep -A1 'docking_or_diversity == \"docking\"' $f | grep -q 'float(x\\[-2\\])'",
+            'AUTOGROW_ROULETTE_PATCHED'
+        ).addCommand(
             # AutoGrow4's own MGLTools 1.5.6 (binary, no conda): 1.5.7's prepare_ligand4.py breaks AutoGrow4
             f'mkdir -p mgltools && cd mgltools && '
             f'wget {cls.getMGLToolsURL()} -O mgltools.tgz --no-check-certificate && '
